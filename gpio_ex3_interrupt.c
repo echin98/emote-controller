@@ -91,6 +91,7 @@ void main(void)
     GPIO_setQualificationMode(HALLC_PIN, GPIO_QUAL_ASYNC);
 
 
+    Device_init();
 
     Interrupt_initModule();
 
@@ -117,6 +118,7 @@ void main(void)
     GPIO_enableInterrupt(GPIO_INT_XINT2);
     GPIO_enableInterrupt(GPIO_INT_XINT3);
 
+
     Interrupt_register(INT_XINT1, &gpioInterruptHandler); //create interrupt handler that would sync with sensing
     Interrupt_register(INT_XINT2, &gpioInterruptHandler);
     Interrupt_register(INT_XINT3, &gpioInterruptHandler);
@@ -141,9 +143,101 @@ void main(void)
 
 __interrupt void gpioInterruptHandler(void)
 {
-    GPIO_togglePin(HALLA_PIN);
-    GPIO_togglePin(HALLB_PIN);
-    GPIO_togglePin(HALLC_PIN);
+    uint16_t pinValue1;
+    uint16_t pinValue2;
+    uint16_t pinValue3;
+
+    pinValue1 = GPIO_readPin(HALLA_PIN);
+    pinValue2 = GPIO_readPin(HALLB_PIN);
+    pinValue3 = GPIO_readPin(HALLC_PIN);
+
+    if (pinValue1 && pinValue2 && pinValue3==0) //case 0
+    {
+
+        //errors present when building for setPinConfig. When integrated with switching will go away
+                    GPIO_setPinConfig(HSA_GPIO);
+                    GPIO_setPinConfig(LSA_GPIO);
+                    GPIO_setPinConfig(HSB_GPIO);
+                    GPIO_setPinConfig(LSB_GPIO);
+                    GPIO_setPinConfig(HSC_GPIO);
+                    GPIO_setPinConfig(LSC_GPIO);
+
+                    GPIO_writePin(HSA_PIN,0);
+                    GPIO_writePin(LSA_PIN,0);
+                    GPIO_writePin(HSB_PIN,0);
+                    GPIO_writePin(LSB_PIN,0);
+                    GPIO_writePin(HSC_PIN,0);
+                    GPIO_writePin(LSC_PIN,0);
+
+    }
+
+    if (pinValue1==1 && pinValue2==0 && pinValue3==1) //case 1
+    {
+                    GPIO_setPinConfig(HSA_PWM); //copied from switching
+                    GPIO_setPinConfig(LSA_GPIO);
+                    GPIO_setPinConfig(HSB_GPIO);
+                    GPIO_setPinConfig(LSB_PWM);
+                    GPIO_setPinConfig(HSC_GPIO);
+                    GPIO_setPinConfig(LSC_GPIO);
+    }
+
+    if (pinValue1==1 && pinValue2==0 && pinValue3==0) //case 2
+       {
+
+                   GPIO_setPinConfig(HSA_PWM);
+                   GPIO_setPinConfig(LSA_GPIO);
+                   GPIO_setPinConfig(HSB_GPIO);
+                   GPIO_setPinConfig(LSB_GPIO);
+                   GPIO_setPinConfig(HSC_GPIO);
+                   GPIO_setPinConfig(LSC_PWM);
+
+       }
+
+    if (pinValue1==1 && pinValue2==1 && pinValue3==0) //case 3
+          {
+                    GPIO_setPinConfig(HSA_GPIO);
+                    GPIO_setPinConfig(LSA_GPIO);
+                    GPIO_setPinConfig(HSB_PWM);
+                    GPIO_setPinConfig(LSB_GPIO);
+                    GPIO_setPinConfig(HSC_GPIO);
+                    GPIO_setPinConfig(LSC_PWM);
+          }
+
+    if (pinValue1==0 && pinValue2==1 && pinValue3==0) //case 4
+          {
+
+
+                    GPIO_setPinConfig(HSA_GPIO);
+                    GPIO_setPinConfig(LSA_PWM);
+                    GPIO_setPinConfig(HSB_PWM);
+                    GPIO_setPinConfig(LSB_GPIO);
+                    GPIO_setPinConfig(HSC_GPIO);
+                    GPIO_setPinConfig(LSC_GPIO);
+
+          }
+    if (pinValue1==0 && pinValue2==1 && pinValue3==1) //case 5
+          {
+                    GPIO_setPinConfig(HSA_GPIO);
+                    GPIO_setPinConfig(LSA_PWM);
+                    GPIO_setPinConfig(HSB_GPIO);
+                    GPIO_setPinConfig(LSB_GPIO);
+                    GPIO_setPinConfig(HSC_PWM);
+                    GPIO_setPinConfig(LSC_GPIO);
+
+
+          }
+
+    if (pinValue1==0 && pinValue2==0 && pinValue3==1) //case 6
+              {
+
+                    GPIO_setPinConfig(HSA_GPIO);
+                    GPIO_setPinConfig(LSA_GPIO);
+                    GPIO_setPinConfig(HSB_GPIO);
+                    GPIO_setPinConfig(LSB_PWM);
+                    GPIO_setPinConfig(HSC_PWM);
+                    GPIO_setPinConfig(LSC_GPIO);
+
+                  }
 
     Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP1); //subject to change
 }
