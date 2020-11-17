@@ -1,7 +1,7 @@
 ******************************************************************************
              TMS320C2000 Linker PC v20.2.1                     
 ******************************************************************************
->> Linked Tue Nov 17 09:48:20 2020
+>> Linked Tue Nov 17 15:05:27 2020
 
 OUTPUT FILE NAME:   <emote-controller_driverlib.out>
 ENTRY POINT SYMBOL: "code_start"  address: 00000000
@@ -15,7 +15,7 @@ PAGE 0:
   BEGIN                 00000000   00000002  00000002  00000000  RWIX
   RAMM0                 00000123   000002dd  00000024  000002b9  RWIX
   RAMLS0                00008000   00000800  00000800  00000000  RWIX
-  RAMLS1                00008800   00000800  0000051a  000002e6  RWIX
+  RAMLS1                00008800   00000800  0000051b  000002e5  RWIX
   RAMLS2                00009000   00000800  00000000  00000800  RWIX
   RAMLS3                00009800   00000800  00000000  00000800  RWIX
   RAMLS4                0000a000   00000800  00000000  00000800  RWIX
@@ -106,11 +106,12 @@ PUTREADIDX
 .text.1    0    00008000    00000800     
                   00008000    00000407     device.obj (.text)
                   00008407    00000213     driverlib_eabi.lib : epwm.obj (.text:EPWM_configureSignal)
-                  0000861a    00000161     main.obj (.text:retain)
-                  0000877b    00000068     driverlib_eabi.lib : sysctl.obj (.text:SysCtl_getDeviceParametric)
-                  000087e3    0000001d                        : epwm.obj (.text:EPWM_setClockPrescaler)
+                  0000861a    00000162     main.obj (.text:retain)
+                  0000877c    00000068     driverlib_eabi.lib : sysctl.obj (.text:SysCtl_getDeviceParametric)
+                  000087e4    0000001a                        : sysctl.obj (.text:SysCtl_getLowSpeedClock)
+                  000087fe    00000002     rts2800_fpu32_eabi.lib : pre_init.c.obj (.text)
 
-.text.2    0    00008800    0000051a     
+.text.2    0    00008800    0000051b     
                   00008800    0000005e     driverlib_eabi.lib : sysctl.obj (.text:SysCtl_selectOscSource)
                   0000885e    00000052                        : gpio.obj (.text:GPIO_setPadConfig)
                   000088b0    00000051                        : sysctl.obj (.text:SysCtl_getClock)
@@ -129,27 +130,26 @@ PUTREADIDX
                   00008b85    00000024     driverlib_eabi.lib : epwm.obj (.text:EPWM_setCounterCompareValue)
                   00008ba9    00000020                        : interrupt.obj (.text:Interrupt_initVectorTable)
                   00008bc9    0000001f                        : epwm.obj (.text:EPWM_setPhaseShift)
-                  00008be8    0000001d     rts2800_fpu32_eabi.lib : memcpy.c.obj (.text)
-                  00008c05    0000001a     driverlib_eabi.lib : sysctl.obj (.text:SysCtl_getLowSpeedClock)
-                  00008c1f    00000017                        : gpio.obj (.text:XBAR_setInputPin)
-                  00008c36    00000017     rts2800_fpu32_eabi.lib : boot28.asm.obj (.text)
-                  00008c4d    00000015     driverlib_eabi.lib : epwm.obj (.text:EPWM_setTimeBaseCounterMode)
-                  00008c62    00000015                        : epwm.obj (.text:EPWM_setTimeBasePeriod)
-                  00008c77    00000013                        : epwm.obj (.text:EPWM_setTimeBaseCounter)
-                  00008c8a    00000012                        : epwm.obj (.text:EPWM_disablePhaseShiftLoad)
-                  00008c9c    0000000e                        : gpio.obj (.text:GPIO_isPinValid)
-                  00008caa    0000000e                        : interrupt.obj (.text:Interrupt_defaultHandler)
-                  00008cb8    0000000d                        : interrupt.obj (.text:Interrupt_disableMaster)
-                  00008cc5    0000000d                        : interrupt.obj (.text:Interrupt_enableMaster)
-                  00008cd2    0000000c                        : epwm.obj (.text:SysCtl_setEPWMClockDivider)
-                  00008cde    0000000c     rts2800_fpu32_eabi.lib : args_main.c.obj (.text)
-                  00008cea    0000000b     driverlib_eabi.lib : sysctl.obj (.text:SysCtl_isMCDClockFailureDetected)
-                  00008cf5    00000009                        : sysctl.obj (.text:SysCtl_serviceWatchdog)
-                  00008cfe    00000009     rts2800_fpu32_eabi.lib : _lock.c.obj (.text)
-                  00008d07    00000008     F2837xD_CodeStartBranch.obj (.text)
-                  00008d0f    00000008     rts2800_fpu32_eabi.lib : copy_decompress_none.c.obj (.text:decompress:none)
-                  00008d17    00000002                            : pre_init.c.obj (.text)
-                  00008d19    00000001                            : startup.c.obj (.text)
+                  00008be8    0000001d                        : epwm.obj (.text:EPWM_setClockPrescaler)
+                  00008c05    0000001d     rts2800_fpu32_eabi.lib : memcpy.c.obj (.text)
+                  00008c22    00000017     driverlib_eabi.lib : gpio.obj (.text:XBAR_setInputPin)
+                  00008c39    00000017     rts2800_fpu32_eabi.lib : boot28.asm.obj (.text)
+                  00008c50    00000015     driverlib_eabi.lib : epwm.obj (.text:EPWM_setTimeBaseCounterMode)
+                  00008c65    00000015                        : epwm.obj (.text:EPWM_setTimeBasePeriod)
+                  00008c7a    00000013                        : epwm.obj (.text:EPWM_setTimeBaseCounter)
+                  00008c8d    00000012                        : epwm.obj (.text:EPWM_disablePhaseShiftLoad)
+                  00008c9f    0000000e                        : gpio.obj (.text:GPIO_isPinValid)
+                  00008cad    0000000e                        : interrupt.obj (.text:Interrupt_defaultHandler)
+                  00008cbb    0000000d                        : interrupt.obj (.text:Interrupt_disableMaster)
+                  00008cc8    0000000d                        : interrupt.obj (.text:Interrupt_enableMaster)
+                  00008cd5    0000000c                        : epwm.obj (.text:SysCtl_setEPWMClockDivider)
+                  00008ce1    0000000c     rts2800_fpu32_eabi.lib : args_main.c.obj (.text)
+                  00008ced    0000000b     driverlib_eabi.lib : sysctl.obj (.text:SysCtl_isMCDClockFailureDetected)
+                  00008cf8    00000009                        : sysctl.obj (.text:SysCtl_serviceWatchdog)
+                  00008d01    00000009     rts2800_fpu32_eabi.lib : _lock.c.obj (.text)
+                  00008d0a    00000008     F2837xD_CodeStartBranch.obj (.text)
+                  00008d12    00000008     rts2800_fpu32_eabi.lib : copy_decompress_none.c.obj (.text:decompress:none)
+                  00008d1a    00000001                            : startup.c.obj (.text)
 
 .text.3    0    0000b000    00000800     
                   0000b000    0000048c     main.obj (.text)
@@ -165,10 +165,10 @@ MODULE SUMMARY
        Module                        code   ro data   rw data
        ------                        ----   -------   -------
     .\
-       main.obj                      1517   143       16     
+       main.obj                      1518   143       16     
        board.obj                     130    0         0      
     +--+-----------------------------+------+---------+---------+
-       Total:                        1647   143       16     
+       Total:                        1648   143       16     
                                                              
     .\device\
        device.obj                    1031   19        6      
@@ -202,7 +202,7 @@ MODULE SUMMARY
        Stack:                        0      0         256    
        Linker Generated:             0      30        0      
     +--+-----------------------------+------+---------+---------+
-       Grand Total:                  5408   791       288    
+       Grand Total:                  5409   791       288    
 
 
 LINKER GENERATED COPY TABLES
@@ -270,8 +270,8 @@ page  address   name
 0     0000b73a  PinMux_init                              
 0     00000123  SysCtl_delay                             
 0     000088b0  SysCtl_getClock                          
-0     0000877b  SysCtl_getDeviceParametric               
-0     00008c05  SysCtl_getLowSpeedClock                  
+0     0000877c  SysCtl_getDeviceParametric               
+0     000087e4  SysCtl_getLowSpeedClock                  
 0     00008800  SysCtl_selectOscSource                   
 0     0000b48c  SysCtl_setClock                          
 0     00000144  __TI_CINIT_Base                          
@@ -283,7 +283,7 @@ abs   00000100  __TI_STACK_SIZE
 0     00008b31  __TI_auto_init_nobinit_nopinit           
 1     0000ab18  __TI_cleanup_ptr                         
 0     00008b00  __TI_decompress_lzss                     
-0     00008d0f  __TI_decompress_none                     
+0     00008d12  __TI_decompress_none                     
 1     0000ab1a  __TI_dtors_ptr                           
 1     0000ab16  __TI_enable_exit_profile_output          
 abs   ffffffff  __TI_pprof_out_hndl                      
@@ -293,14 +293,14 @@ abs   ffffffff  __TI_prof_data_start
 n/a   UNDEFED   __c_args__                               
 0     000083f5  __error__                                
 1     00000400  __stack                                  
-0     00008cde  _args_main                               
-0     00008c36  _c_int00                                 
+0     00008ce1  _args_main                               
+0     00008c39  _c_int00                                 
 1     0000aafe  _lock                                    
-0     00008d06  _nop                                     
-0     00008d02  _register_lock                           
-0     00008cfe  _register_unlock                         
-0     00008d19  _system_post_cinit                       
-0     00008d17  _system_pre_init                         
+0     00008d09  _nop                                     
+0     00008d05  _register_lock                           
+0     00008d01  _register_unlock                         
+0     00008d1a  _system_post_cinit                       
+0     000087fe  _system_pre_init                         
 1     0000ab1c  _unlock                                  
 0     00008b5c  abort                                    
 0     00000000  code_start                               
@@ -308,7 +308,7 @@ n/a   UNDEFED   __c_args__
 0     00008b5e  exit                                     
 0     0000861a  gpioInterruptHandler                     
 0     0000b19c  main                                     
-0     00008be8  memcpy                                   
+0     00008c05  memcpy                                   
 1     0000ab02  pwmSignal                                
 0     0000b2b1  switch_state_machine                     
 
@@ -337,7 +337,9 @@ page  address   name
 0     00008406  Example_done                             
 0     00008407  EPWM_configureSignal                     
 0     0000861a  gpioInterruptHandler                     
-0     0000877b  SysCtl_getDeviceParametric               
+0     0000877c  SysCtl_getDeviceParametric               
+0     000087e4  SysCtl_getLowSpeedClock                  
+0     000087fe  _system_pre_init                         
 0     00008800  SysCtl_selectOscSource                   
 0     0000885e  GPIO_setPadConfig                        
 0     000088b0  SysCtl_getClock                          
@@ -354,16 +356,14 @@ page  address   name
 0     00008b5c  abort                                    
 0     00008b5e  exit                                     
 0     00008ba9  Interrupt_initVectorTable                
-0     00008be8  memcpy                                   
-0     00008c05  SysCtl_getLowSpeedClock                  
-0     00008c36  _c_int00                                 
-0     00008cde  _args_main                               
-0     00008cfe  _register_unlock                         
-0     00008d02  _register_lock                           
-0     00008d06  _nop                                     
-0     00008d0f  __TI_decompress_none                     
-0     00008d17  _system_pre_init                         
-0     00008d19  _system_post_cinit                       
+0     00008c05  memcpy                                   
+0     00008c39  _c_int00                                 
+0     00008ce1  _args_main                               
+0     00008d01  _register_unlock                         
+0     00008d05  _register_lock                           
+0     00008d09  _nop                                     
+0     00008d12  __TI_decompress_none                     
+0     00008d1a  _system_post_cinit                       
 0     0000b19c  main                                     
 0     0000b279  configurePhase                           
 0     0000b2b1  switch_state_machine                     

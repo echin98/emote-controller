@@ -80,7 +80,7 @@ enum switch_states{
 //ISSUE
 //Look to see if these are the right configs
 EPWM_SignalParams pwmSignal =
-            {60000, 0.3f, 0.3f, false, DEVICE_SYSCLK_FREQ, SYSCTL_EPWMCLK_DIV_2,
+            {60000, 0.7f, 0.7f, false, DEVICE_SYSCLK_FREQ, SYSCTL_EPWMCLK_DIV_2,
             EPWM_COUNTER_MODE_UP_DOWN, EPWM_CLOCK_DIVIDER_1,
             EPWM_HSCLOCK_DIVIDER_1};
 
@@ -148,7 +148,7 @@ void main(void)
     Interrupt_enable(INT_XINT2);
     Interrupt_enable(INT_XINT3);
 
-    /* INTERRUPT SETUP */
+    /* END INTERRUPT SETUP */
 
     /* PWM SETUP */
 
@@ -215,6 +215,7 @@ __interrupt void gpioInterruptHandler(void)
     pinValue1 = GPIO_readPin(HALLA_PIN);
     pinValue2 = GPIO_readPin(HALLB_PIN);
     pinValue3 = GPIO_readPin(HALLC_PIN);
+
 
     if (pinValue1 && pinValue2 && pinValue3==0) //case 0
     {
@@ -305,7 +306,7 @@ __interrupt void gpioInterruptHandler(void)
                   }
 
     Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP1); //subject to change
-    Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP2); //subject to change
+    Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP12); //subject to change
 }
 
 //
