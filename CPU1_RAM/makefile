@@ -159,7 +159,7 @@ emote-controller_driverlib.hex: $(EXE_OUTPUTS)
 
 # Other Targets
 clean:
-	-$(RM) $(BIN_OUTPUTS__QUOTED)$(EXE_OUTPUTS__QUOTED)
+	-$(RM) $(BIN_OUTPUTS__QUOTED)$(GEN_FILES__QUOTED)$(EXE_OUTPUTS__QUOTED)
 	-$(RM) "board.obj" "main.obj" "device\F2837xD_CodeStartBranch.obj" "device\device.obj" 
 	-$(RM) "board.d" "main.d" "device\device.d" 
 	-$(RM) "device\F2837xD_CodeStartBranch.d" 
