@@ -2,11 +2,10 @@
 //
 // FILE:   empty_driverlib_main.c
 //
-// TITLE:  Empty Project
+// TITLE:  Emote Controller
 //
-// Empty Project Example
 //
-// This example is an empty project setup for Driverlib development.
+// Emote controller base firmware
 //
 //#############################################################################
 // $TI Release: F2837xD Support Library v3.11.00.00 $
@@ -55,6 +54,9 @@
 
 #define GUARD_PD_US 500
 
+#define RESULTS_BUFFER_SIZE     256
+#define EX_ADC_RESOLUTION       12
+
 enum switch_commands{
     INCREMENT,
     DECREMENT,
@@ -76,16 +78,29 @@ enum switch_states{
     STATE5,
     STATE6
 };
+#define FORWARD 0
+#define REVERSE 1
 
-//ISSUE
-//Look to see if these are the right configs
+float duty_cycle = 0.5;
+uint8_t direction = FORWARD;
+
+volatile bool enable = true;
+
 EPWM_SignalParams pwmSignal =
-            {60000, 0.7f, 0.7f, false, DEVICE_SYSCLK_FREQ, SYSCTL_EPWMCLK_DIV_2,
+            {60000, 0.5f, 0.5f, false, DEVICE_SYSCLK_FREQ, SYSCTL_EPWMCLK_DIV_2,
             EPWM_COUNTER_MODE_UP_DOWN, EPWM_CLOCK_DIVIDER_1,
             EPWM_HSCLOCK_DIVIDER_1};
 
+uint16_t adcAResult1;
+
+//
+// Function Prototypes
+//
+void initADCs(void);
+void initADCSOCs(void);
 void configurePhase(uint32_t base, uint32_t masterBase, uint16_t phaseVal);
-void switch_state_machine(enum switch_commands command);
+uint8_t switch_state_machine(enum switch_commands command);
+void set_duty_cycle(float val);
 
 //
 // Interrupt Handler
@@ -191,16 +206,36 @@ void main(void)
     //
     Interrupt_enable(INT_EPWM1);
 
+    //
+    // Set up ADCs, initializing the SOCs to be triggered by software
+    //
+    initADCs();
+    initADCSOCs();
+
     EINT;  // Enable Global interrupt INTM
     ERTM;  // Enable Global realtime interrupt DBGM
 
     /* END PWM SETUP */
-
+    float duty_cycle = 0.5;
     for(;;)
     {
-        ;
-        //switch_state_machine(INCREMENT);
-        //DEVICE_DELAY_US(1000);
+        ADC_forceSOC(ADCA_BASE, ADC_SOC_NUMBER1);
+        //
+        // Wait for ADCA to complete, then acknowledge flag
+        //
+        while(ADC_getInterruptStatus(ADCA_BASE, ADC_INT_NUMBER1) == false)
+        {
+        }
+        ADC_clearInterruptStatus(ADCA_BASE, ADC_INT_NUMBER1);
+
+        adcAResult1 = ADC_readResult(ADCARESULT_BASE, ADC_SOC_NUMBER1);
+        float dc = 0.9*((float)adcAResult1/4096);
+        if(dc>0.9) dc = 0.9;
+        if(dc<0.05) dc = 0;
+        float dc_temp = dc;
+        set_duty_cycle(dc);
+        //ESTOP0;
+
     }
 
 
@@ -208,105 +243,51 @@ void main(void)
 
 __interrupt void gpioInterruptHandler(void)
 {
-    uint16_t pinValue1;
-    uint16_t pinValue2;
-    uint16_t pinValue3;
 
-    pinValue1 = GPIO_readPin(HALLA_PIN);
-    pinValue2 = GPIO_readPin(HALLB_PIN);
-    pinValue3 = GPIO_readPin(HALLC_PIN);
-
-
-    if (pinValue1 && pinValue2 && pinValue3==0) //case 0
-    {
-
-        //errors present when building for setPinConfig. When integrated with switching will go away
-                    GPIO_setPinConfig(HSA_GPIO);
-                    GPIO_setPinConfig(LSA_GPIO);
-                    GPIO_setPinConfig(HSB_GPIO);
-                    GPIO_setPinConfig(LSB_GPIO);
-                    GPIO_setPinConfig(HSC_GPIO);
-                    GPIO_setPinConfig(LSC_GPIO);
-
-                    GPIO_writePin(HSA_PIN,0);
-                    GPIO_writePin(LSA_PIN,0);
-                    GPIO_writePin(HSB_PIN,0);
-                    GPIO_writePin(LSB_PIN,0);
-                    GPIO_writePin(HSC_PIN,0);
-                    GPIO_writePin(LSC_PIN,0);
+    uint8_t pinVal = GPIO_readPin(HALLA_PIN)<<2 | GPIO_readPin(HALLB_PIN)<<1 | GPIO_readPin(HALLC_PIN);
+    switch(pinVal){
+    case 0b101:
+        switch_state_machine(SET1);
+        break;
+    case 0b100:
+        switch_state_machine(SET2);
+        break;
+    case 0b110:
+        switch_state_machine(SET3);
+        break;
+    case 0b010:
+        switch_state_machine(SET4);
+        break;
+    case 0b011:
+        switch_state_machine(SET5);
+        break;
+    case 0b001:
+        switch_state_machine(SET6);
+        break;
+    default:        //catch errors
+        switch_state_machine(RESET);
+        break;
 
     }
-
-    if (pinValue1==1 && pinValue2==0 && pinValue3==1) //case 1
-    {
-                    GPIO_setPinConfig(HSA_PWM); //copied from switching
-                    GPIO_setPinConfig(LSA_GPIO);
-                    GPIO_setPinConfig(HSB_GPIO);
-                    GPIO_setPinConfig(LSB_PWM);
-                    GPIO_setPinConfig(HSC_GPIO);
-                    GPIO_setPinConfig(LSC_GPIO);
-    }
-
-    if (pinValue1==1 && pinValue2==0 && pinValue3==0) //case 2
-       {
-
-                   GPIO_setPinConfig(HSA_PWM);
-                   GPIO_setPinConfig(LSA_GPIO);
-                   GPIO_setPinConfig(HSB_GPIO);
-                   GPIO_setPinConfig(LSB_GPIO);
-                   GPIO_setPinConfig(HSC_GPIO);
-                   GPIO_setPinConfig(LSC_PWM);
-
-       }
-
-    if (pinValue1==1 && pinValue2==1 && pinValue3==0) //case 3
-          {
-                    GPIO_setPinConfig(HSA_GPIO);
-                    GPIO_setPinConfig(LSA_GPIO);
-                    GPIO_setPinConfig(HSB_PWM);
-                    GPIO_setPinConfig(LSB_GPIO);
-                    GPIO_setPinConfig(HSC_GPIO);
-                    GPIO_setPinConfig(LSC_PWM);
-          }
-
-    if (pinValue1==0 && pinValue2==1 && pinValue3==0) //case 4
-          {
-
-
-                    GPIO_setPinConfig(HSA_GPIO);
-                    GPIO_setPinConfig(LSA_PWM);
-                    GPIO_setPinConfig(HSB_PWM);
-                    GPIO_setPinConfig(LSB_GPIO);
-                    GPIO_setPinConfig(HSC_GPIO);
-                    GPIO_setPinConfig(LSC_GPIO);
-
-          }
-    if (pinValue1==0 && pinValue2==1 && pinValue3==1) //case 5
-          {
-                    GPIO_setPinConfig(HSA_GPIO);
-                    GPIO_setPinConfig(LSA_PWM);
-                    GPIO_setPinConfig(HSB_GPIO);
-                    GPIO_setPinConfig(LSB_GPIO);
-                    GPIO_setPinConfig(HSC_PWM);
-                    GPIO_setPinConfig(LSC_GPIO);
-
-
-          }
-
-    if (pinValue1==0 && pinValue2==0 && pinValue3==1) //case 6
-              {
-
-                    GPIO_setPinConfig(HSA_GPIO);
-                    GPIO_setPinConfig(LSA_GPIO);
-                    GPIO_setPinConfig(HSB_GPIO);
-                    GPIO_setPinConfig(LSB_PWM);
-                    GPIO_setPinConfig(HSC_PWM);
-                    GPIO_setPinConfig(LSC_GPIO);
-
-                  }
 
     Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP1); //subject to change
     Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP12); //subject to change
+}
+
+
+//
+// set_duty_cycle - Set the duty cycle of the power control PWM
+void set_duty_cycle(float val)
+{
+    uint16_t tbpd = EPWM_getTimeBasePeriod(EPWM1_BASE);
+    uint16_t compare_val = tbpd-tbpd*val;
+    EPWM_setCounterCompareValue(EPWM1_BASE, EPWM_COUNTER_COMPARE_A, compare_val);
+    EPWM_setCounterCompareValue(EPWM1_BASE, EPWM_COUNTER_COMPARE_B, compare_val);
+    EPWM_setCounterCompareValue(EPWM2_BASE, EPWM_COUNTER_COMPARE_A, compare_val);
+    EPWM_setCounterCompareValue(EPWM2_BASE, EPWM_COUNTER_COMPARE_B, compare_val);
+    EPWM_setCounterCompareValue(EPWM3_BASE, EPWM_COUNTER_COMPARE_A, compare_val);
+    EPWM_setCounterCompareValue(EPWM3_BASE, EPWM_COUNTER_COMPARE_B, compare_val);
+
 }
 
 //
@@ -338,120 +319,135 @@ void configurePhase(uint32_t base, uint32_t masterBase, uint16_t phaseVal)
     EPWM_setTimeBaseCounter(base, phaseRegVal);
 }
 
-void switch_state_machine(enum switch_commands command)
+uint8_t switch_state_machine(enum switch_commands command)
 {
     static uint8_t state = STATE0;
-    switch(state){
-        case STATE0:
-            switch(command){
-                case INCREMENT:
-                    state = 1;
-                    break;
-                case DECREMENT:
-                    state = 6;
-                    break;
-                case SET1:
-                    state = 1;
-                    break;
-                case SET2:
-                    state = 2;
-                    break;
-                case SET3:
-                    state = 3;
-                    break;
-                case SET4:
-                    state = 4;
-                    break;
-                case SET5:
-                    state = 5;
-                    break;
-                case SET6:
-                    state = 6;
-                    break;
-                default:
-                    state = 0;
-                    break;
-            }
-            break;
-        case STATE1:
-            switch(command){
-                case INCREMENT:
-                    state = STATE2;
-                    break;
-                case DECREMENT:
-                    state = STATE6;
-                    break;
-                case RESET:
-                    state = STATE0;
-                    break;
-            }
-            break;
-        case STATE2:
-            switch(command){
-                case INCREMENT:
-                    state = STATE3;
-                    break;
-                case DECREMENT:
-                    state = STATE1;
-                    break;
-                case RESET:
-                    state = STATE0;
-                    break;
-            }
-            break;
-            case STATE3:
+    if(enable){
+        switch(state){
+            case STATE0:
                 switch(command){
                     case INCREMENT:
-                        state = STATE4;
+                        state = 1;
                         break;
                     case DECREMENT:
-                        state = STATE2;
+                        state = 6;
                         break;
-                    case RESET:
-                        state = STATE0;
+                    case SET1:
+                        state = 1;
                         break;
+                    case SET2:
+                        state = 2;
+                        break;
+                    case SET3:
+                        state = 3;
+                        break;
+                    case SET4:
+                        state = 4;
+                        break;
+                    case SET5:
+                        state = 5;
+                        break;
+                    case SET6:
+                        state = 6;
+                        break;
+                    default:
+                        state = 0;
+                        break;
+                }
+                break;
+            case STATE1:
+                switch(command){
+                case SET1:
+                    break;
+                case SET2: case INCREMENT:
+                    state = STATE2;
+                    break;
+                case SET6: case DECREMENT:
+                    state = STATE6;
+                    break;
+                default:
+                    state = STATE0;
+                    break;
+                }
+                break;
+            case STATE2:
+                switch(command){
+                case SET2:
+                    break;
+                case SET3: case INCREMENT:
+                    state = STATE3;
+                    break;
+                case SET1: case DECREMENT:
+                    state = STATE1;
+                    break;
+                default:
+                    state = STATE0;
+                    break;
+                }
+                break;
+            case STATE3:
+                switch(command){
+                case SET3:
+                    break;
+                case SET4: case INCREMENT:
+                    state = STATE4;
+                    break;
+                case SET2: case DECREMENT:
+                    state = STATE2;
+                    break;
+                default:
+                    state = STATE0;
+                    break;
                 }
                 break;
             case STATE4:
                 switch(command){
-                    case INCREMENT:
-                        state = STATE5;
-                        break;
-                    case DECREMENT:
-                        state = STATE3;
-                        break;
-                    case RESET:
-                        state = STATE0;
-                        break;
+                case SET4:
+                    break;
+                case SET5: case INCREMENT:
+                    state = STATE5;
+                    break;
+                case SET3: case DECREMENT:
+                    state = STATE3;
+                    break;
+                default:
+                    state = STATE0;
+                    break;
                 }
                 break;
             case STATE5:
                 switch(command){
-                    case INCREMENT:
-                        state = STATE6;
-                        break;
-                    case DECREMENT:
-                        state = STATE4;
-                        break;
-                    case RESET:
-                        state = STATE0;
-                        break;
+                case SET5:
+                    break;
+                case SET6: case INCREMENT:
+                    state = STATE6;
+                    break;
+                case SET4: case DECREMENT:
+                    state = STATE4;
+                    break;
+                default:
+                    state = STATE0;
+                    break;
                 }
                 break;
             case STATE6:
                 switch(command){
-                    case INCREMENT:
-                        state = STATE1;
-                        break;
-                    case DECREMENT:
-                        state = STATE5;
-                        break;
-                    case RESET:
-                        state = STATE0;
-                        break;
+                case SET6:
+                    break;
+                case SET1: case INCREMENT:
+                    state = STATE1;
+                    break;
+                case SET5: case DECREMENT:
+                    state = STATE5;
+                    break;
+                default:
+                    state = STATE0;
+                    break;
                 }
                 break;
-    }
+        }
+    } else state = 0;
+
     switch(state){
         case STATE0:
             GPIO_setPinConfig(HSA_GPIO);
@@ -469,57 +465,159 @@ void switch_state_machine(enum switch_commands command)
             GPIO_writePin(LSC_PIN,0);
             break;
         case STATE1:
-            GPIO_setPinConfig(HSA_PWM);
             GPIO_setPinConfig(LSA_GPIO);
             GPIO_setPinConfig(HSB_GPIO);
-            GPIO_setPinConfig(LSB_PWM);
             GPIO_setPinConfig(HSC_GPIO);
             GPIO_setPinConfig(LSC_GPIO);
+            GPIO_setPinConfig(LSB_PWM);
+            GPIO_setPinConfig(HSA_PWM);
             break;
         case STATE2:
-            GPIO_setPinConfig(HSA_PWM);
             GPIO_setPinConfig(LSA_GPIO);
             GPIO_setPinConfig(HSB_GPIO);
             GPIO_setPinConfig(LSB_GPIO);
             GPIO_setPinConfig(HSC_GPIO);
             GPIO_setPinConfig(LSC_PWM);
+            GPIO_setPinConfig(HSA_PWM);
             break;
         case STATE3:
             GPIO_setPinConfig(HSA_GPIO);
             GPIO_setPinConfig(LSA_GPIO);
-            GPIO_setPinConfig(HSB_PWM);
             GPIO_setPinConfig(LSB_GPIO);
             GPIO_setPinConfig(HSC_GPIO);
             GPIO_setPinConfig(LSC_PWM);
+            GPIO_setPinConfig(HSB_PWM);
             break;
         case STATE4:
             GPIO_setPinConfig(HSA_GPIO);
-            GPIO_setPinConfig(LSA_PWM);
-            GPIO_setPinConfig(HSB_PWM);
             GPIO_setPinConfig(LSB_GPIO);
             GPIO_setPinConfig(HSC_GPIO);
             GPIO_setPinConfig(LSC_GPIO);
+            GPIO_setPinConfig(LSA_PWM);
+            GPIO_setPinConfig(HSB_PWM);
             break;
         case STATE5:
             GPIO_setPinConfig(HSA_GPIO);
-            GPIO_setPinConfig(LSA_PWM);
             GPIO_setPinConfig(HSB_GPIO);
             GPIO_setPinConfig(LSB_GPIO);
-            GPIO_setPinConfig(HSC_PWM);
             GPIO_setPinConfig(LSC_GPIO);
+            GPIO_setPinConfig(LSA_PWM);
+            GPIO_setPinConfig(HSC_PWM);
             break;
         case STATE6:
             GPIO_setPinConfig(HSA_GPIO);
             GPIO_setPinConfig(LSA_GPIO);
             GPIO_setPinConfig(HSB_GPIO);
+            GPIO_setPinConfig(LSC_GPIO);
             GPIO_setPinConfig(LSB_PWM);
             GPIO_setPinConfig(HSC_PWM);
-            GPIO_setPinConfig(LSC_GPIO);
 
             break;
     }
-    DEVICE_DELAY_US(GUARD_PD_US);
+    return state;
 }
+//
+// Function to configure and power up ADCs A and B.
+//
+void initADCs(void)
+{
+    //
+    // Set ADCCLK divider to /4
+    //
+    ADC_setPrescaler(ADCA_BASE, ADC_CLK_DIV_4_0);
+    ADC_setPrescaler(ADCB_BASE, ADC_CLK_DIV_4_0);
+
+    //
+    // Set resolution and signal mode (see #defines above) and load
+    // corresponding trims.
+    //
+#if(EX_ADC_RESOLUTION == 12)
+    ADC_setMode(ADCA_BASE, ADC_RESOLUTION_12BIT, ADC_MODE_SINGLE_ENDED);
+    ADC_setMode(ADCB_BASE, ADC_RESOLUTION_12BIT, ADC_MODE_SINGLE_ENDED);
+#elif(EX_ADC_RESOLUTION == 16)
+    ADC_setMode(ADCA_BASE, ADC_RESOLUTION_16BIT, ADC_MODE_DIFFERENTIAL);
+    ADC_setMode(ADCB_BASE, ADC_RESOLUTION_16BIT, ADC_MODE_DIFFERENTIAL);
+#endif
+
+    //
+    // Set pulse positions to late
+    //
+    ADC_setInterruptPulseMode(ADCA_BASE, ADC_PULSE_END_OF_CONV);
+    ADC_setInterruptPulseMode(ADCB_BASE, ADC_PULSE_END_OF_CONV);
+
+    //
+    // Power up the ADCs and then delay for 1 ms
+    //
+    ADC_enableConverter(ADCA_BASE);
+    ADC_enableConverter(ADCB_BASE);
+
+    DEVICE_DELAY_US(1000);
+}
+
+//
+// Function to configure SOCs 0 and 1 of ADCs A and B.
+//
+void initADCSOCs(void)
+{
+    //
+    // Configure SOCs of ADCA
+    // - SOC0 will convert pin A0.
+    // - SOC1 will convert pin A1.
+    // - Both will be triggered by software only.
+    // - For 12-bit resolution, a sampling window of 15 (75 ns at a 200MHz
+    //   SYSCLK rate) will be used.  For 16-bit resolution, a sampling window
+    //   of 64 (320 ns at a 200MHz SYSCLK rate) will be used.
+    //
+#if(EX_ADC_RESOLUTION == 12)
+    ADC_setupSOC(ADCA_BASE, ADC_SOC_NUMBER0, ADC_TRIGGER_SW_ONLY,
+                 ADC_CH_ADCIN0, 15);
+    ADC_setupSOC(ADCA_BASE, ADC_SOC_NUMBER1, ADC_TRIGGER_SW_ONLY,
+                 ADC_CH_ADCIN1, 15);
+#elif(EX_ADC_RESOLUTION == 16)
+    ADC_setupSOC(ADCA_BASE, ADC_SOC_NUMBER0, ADC_TRIGGER_SW_ONLY,
+                 ADC_CH_ADCIN0, 64);
+    ADC_setupSOC(ADCA_BASE, ADC_SOC_NUMBER1, ADC_TRIGGER_SW_ONLY,
+                 ADC_CH_ADCIN1, 64);
+#endif
+
+    //
+    // Set SOC1 to set the interrupt 1 flag. Enable the interrupt and make
+    // sure its flag is cleared.
+    //
+    ADC_setInterruptSource(ADCA_BASE, ADC_INT_NUMBER1, ADC_SOC_NUMBER1);
+    ADC_enableInterrupt(ADCA_BASE, ADC_INT_NUMBER1);
+    ADC_clearInterruptStatus(ADCA_BASE, ADC_INT_NUMBER1);
+
+    //
+    // Configure SOCs of ADCB
+    // - SOC0 will convert pin B0.
+    // - SOC1 will convert pin B1.
+    // - Both will be triggered by software only.
+    // - For 12-bit resolution, a sampling window of 15 (75 ns at a 200MHz
+    //   SYSCLK rate) will be used.  For 16-bit resolution, a sampling window
+    //   of 64 (320 ns at a 200MHz SYSCLK rate) will be used.
+    //
+#if(EX_ADC_RESOLUTION == 12)
+    ADC_setupSOC(ADCB_BASE, ADC_SOC_NUMBER0, ADC_TRIGGER_SW_ONLY,
+                 ADC_CH_ADCIN0, 15);
+    ADC_setupSOC(ADCB_BASE, ADC_SOC_NUMBER1, ADC_TRIGGER_SW_ONLY,
+                 ADC_CH_ADCIN1, 15);
+#elif(EX_ADC_RESOLUTION == 16)
+    ADC_setupSOC(ADCB_BASE, ADC_SOC_NUMBER0, ADC_TRIGGER_SW_ONLY,
+                 ADC_CH_ADCIN0, 64);
+    ADC_setupSOC(ADCB_BASE, ADC_SOC_NUMBER1, ADC_TRIGGER_SW_ONLY,
+                 ADC_CH_ADCIN1, 64);
+#endif
+
+    //
+    // Set SOC1 to set the interrupt 1 flag. Enable the interrupt and make
+    // sure its flag is cleared.
+    //
+    ADC_setInterruptSource(ADCB_BASE, ADC_INT_NUMBER1, ADC_SOC_NUMBER1);
+    ADC_enableInterrupt(ADCB_BASE, ADC_INT_NUMBER1);
+    ADC_clearInterruptStatus(ADCB_BASE, ADC_INT_NUMBER1);
+}
+
 
 //
 // End of File
