@@ -78,11 +78,11 @@ enum switch_states{
     STATE5,
     STATE6
 };
-#define FORWARD 0
-#define REVERSE 1
+#define FORWARD 1
+#define REVERSE 0
 
 float duty_cycle = 0.5;
-uint8_t direction = FORWARD;
+uint8_t direction = REVERSE;
 
 volatile bool enable = true;
 
@@ -229,8 +229,16 @@ void main(void)
         ADC_clearInterruptStatus(ADCA_BASE, ADC_INT_NUMBER1);
 
         adcAResult1 = ADC_readResult(ADCARESULT_BASE, ADC_SOC_NUMBER1);
-        float dc = 0.9*((float)adcAResult1/4096);
-        if(dc>0.9) dc = 0.9;
+        float dc = 1.8*((float)adcAResult1/4096)-0.9;
+        if(dc<0){
+            direction = REVERSE;
+            dc = -dc;
+        }
+        else{
+            direction = FORWARD;
+        }
+
+        if(dc>0.9)dc = 0.9;
         if(dc<0.05) dc = 0;
         float dc_temp = dc;
         set_duty_cycle(dc);
@@ -245,29 +253,58 @@ __interrupt void gpioInterruptHandler(void)
 {
 
     uint8_t pinVal = GPIO_readPin(HALLA_PIN)<<2 | GPIO_readPin(HALLB_PIN)<<1 | GPIO_readPin(HALLC_PIN);
-    switch(pinVal){
-    case 0b101:
-        switch_state_machine(SET1);
-        break;
-    case 0b100:
-        switch_state_machine(SET2);
-        break;
-    case 0b110:
-        switch_state_machine(SET3);
-        break;
-    case 0b010:
-        switch_state_machine(SET4);
-        break;
-    case 0b011:
-        switch_state_machine(SET5);
-        break;
-    case 0b001:
-        switch_state_machine(SET6);
-        break;
-    default:        //catch errors
-        switch_state_machine(RESET);
-        break;
+    if(direction){
+        switch(pinVal){
+        case 0b101:
+            switch_state_machine(SET1);
+            break;
+        case 0b100:
+            switch_state_machine(SET2);
+            break;
+        case 0b110:
+            switch_state_machine(SET3);
+            break;
+        case 0b010:
+            switch_state_machine(SET4);
+            break;
+        case 0b011:
+            switch_state_machine(SET5);
+            break;
+        case 0b001:
+            switch_state_machine(SET6);
+            break;
+        default:        //catch errors
+            switch_state_machine(RESET);
+            break;
 
+        }
+    }
+    else
+    {
+        switch(pinVal){
+        case 0b101:
+            switch_state_machine(SET4);
+            break;
+        case 0b100:
+            switch_state_machine(SET5);
+            break;
+        case 0b110:
+            switch_state_machine(SET6);
+            break;
+        case 0b010:
+            switch_state_machine(SET1);
+            break;
+        case 0b011:
+            switch_state_machine(SET2);
+            break;
+        case 0b001:
+            switch_state_machine(SET3);
+            break;
+        default:        //catch errors
+            switch_state_machine(RESET);
+            break;
+
+        }
     }
 
     Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP1); //subject to change
@@ -359,6 +396,9 @@ uint8_t switch_state_machine(enum switch_commands command)
                 switch(command){
                 case SET1:
                     break;
+                case SET4:
+                    state = STATE4;
+                    break;
                 case SET2: case INCREMENT:
                     state = STATE2;
                     break;
@@ -373,6 +413,9 @@ uint8_t switch_state_machine(enum switch_commands command)
             case STATE2:
                 switch(command){
                 case SET2:
+                    break;
+                case SET5:
+                    state = STATE5;
                     break;
                 case SET3: case INCREMENT:
                     state = STATE3;
@@ -389,6 +432,9 @@ uint8_t switch_state_machine(enum switch_commands command)
                 switch(command){
                 case SET3:
                     break;
+                case SET6:
+                    state = STATE6;
+                    break;
                 case SET4: case INCREMENT:
                     state = STATE4;
                     break;
@@ -403,6 +449,9 @@ uint8_t switch_state_machine(enum switch_commands command)
             case STATE4:
                 switch(command){
                 case SET4:
+                    break;
+                case SET1:
+                    state = STATE1;
                     break;
                 case SET5: case INCREMENT:
                     state = STATE5;
@@ -419,6 +468,9 @@ uint8_t switch_state_machine(enum switch_commands command)
                 switch(command){
                 case SET5:
                     break;
+                case SET2:
+                    state = STATE2;
+                    break;
                 case SET6: case INCREMENT:
                     state = STATE6;
                     break;
@@ -433,6 +485,9 @@ uint8_t switch_state_machine(enum switch_commands command)
             case STATE6:
                 switch(command){
                 case SET6:
+                    break;
+                case SET3:
+                    state = STATE3;
                     break;
                 case SET1: case INCREMENT:
                     state = STATE1;
