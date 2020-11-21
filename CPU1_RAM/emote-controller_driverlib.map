@@ -1,11 +1,7 @@
 ******************************************************************************
              TMS320C2000 Linker PC v20.2.1                     
 ******************************************************************************
-<<<<<<< HEAD
->> Linked Sat Nov 21 09:13:30 2020
-=======
->> Linked Sat Nov 21 14:39:39 2020
->>>>>>> echin_sampling
+>> Linked Sat Nov 21 14:44:08 2020
 
 OUTPUT FILE NAME:   <emote-controller_driverlib.out>
 ENTRY POINT SYMBOL: "code_start"  address: 00000000
