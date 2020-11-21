@@ -51,11 +51,10 @@
 #include "board.h"
 #include <stdint.h>
 #include <stdlib.h>
+#include "sampling.h"
+#include <stdio.h>
 
 #define GUARD_PD_US 500
-
-#define RESULTS_BUFFER_SIZE     256
-#define EX_ADC_RESOLUTION       12
 
 enum switch_commands{
     INCREMENT,
@@ -81,6 +80,15 @@ enum switch_states{
 #define FORWARD 1
 #define REVERSE 0
 
+// 12 for 12-bit conversion resolution, which support (ADC_MODE_SINGLE_ENDED)
+// Sample on single pin with VREFLO
+// Or 16 for 16-bit conversion resolution, which support (ADC_MODE_DIFFERENTIAL)
+// Sample on pair of pins
+//
+// Globals
+//
+
+
 float duty_cycle = 0.5;
 uint8_t direction = REVERSE;
 
@@ -103,15 +111,16 @@ uint8_t switch_state_machine(enum switch_commands command);
 void set_duty_cycle(float val);
 
 //
-// Interrupt Handler
+// Interrupt Handlers
 //
 __interrupt void gpioInterruptHandler(void);
+
 
 //
 // Main
 //
 void main(void)
-{
+ {
     GPIO_setPinConfig(GPIO_32_GPIO32);
     GPIO_setDirectionMode(HALLA_PIN,GPIO_DIR_MODE_IN);
     GPIO_setPadConfig(HALLA_PIN, GPIO_PIN_TYPE_STD);
@@ -154,6 +163,9 @@ void main(void)
     GPIO_enableInterrupt(GPIO_INT_XINT2);
     GPIO_enableInterrupt(GPIO_INT_XINT3);
 
+    Interrupt_register(INT_ADCA2, &adcA2ISR);
+    Interrupt_register(INT_ADCB2, &adcB2ISR);
+    Interrupt_register(INT_ADCC2, &adcC2ISR);
 
     Interrupt_register(INT_XINT1, &gpioInterruptHandler); //create interrupt handler that would sync with sensing
     Interrupt_register(INT_XINT2, &gpioInterruptHandler);
@@ -164,6 +176,10 @@ void main(void)
     Interrupt_enable(INT_XINT3);
 
     /* END INTERRUPT SETUP */
+
+    /* ADC SETUP */
+
+    sampling_init();
 
     /* PWM SETUP */
 
@@ -243,6 +259,51 @@ void main(void)
         float dc_temp = dc;
         set_duty_cycle(dc);
         //ESTOP0;
+        //
+        // Start ePWM1/EPWM2, enabling SOCA-b and putting the counter in up-count mode
+        //
+/* Sampling stuff */
+
+        /*EPWM_enableADCTrigger(EPWM4_BASE, EPWM_SOC_A); //SOCA AND SOCB can trigger ADCA and ADCB synchronously w/o overlapping
+        EPWM_setTimeBaseCounterMode(EPWM4_BASE, EPWM_COUNTER_MODE_UP);
+
+
+        //
+        // Wait while ePWM1 causes ADC conversions which then cause interrupts.
+        // When the results buffer is filled, the bufferFull flag will be set.
+        //
+        while(s_getBufferFullA2() == 0)
+        {
+        }
+
+        //
+        // Stop ePWM1/ePWM1, disabling SOCA-B and freezing the counter
+        //
+
+        EPWM_disableADCTrigger(EPWM4_BASE, EPWM_SOC_A);
+        EPWM_setTimeBaseCounterMode(EPWM4_BASE, EPWM_COUNTER_MODE_STOP_FREEZE);
+        s_resetBufferA2();     // Clear the buffer full flag
+        s_resetBufferB2();
+        s_resetBufferC2();
+
+
+        uint16_t* tempA = s_getA2Buffer();
+        uint16_t* tempB = s_getB2Buffer();
+        uint16_t* tempC = s_getC2Buffer();
+
+        uint8_t read_idx;
+        printf("starting\n");
+        for(read_idx = 0; read_idx<RESULTS_BUFFER_SIZE; read_idx++){
+            printf("%u\n",tempA[read_idx]);
+        }
+
+        //
+        // Software breakpoint. At this point, conversion results are stored in
+        // adcAResults.
+        //
+        // Hit run again to get updated conversions.
+        //
+        ESTOP0;*/
 
     }
 
@@ -580,7 +641,6 @@ void initADCs(void)
     // Set ADCCLK divider to /4
     //
     ADC_setPrescaler(ADCA_BASE, ADC_CLK_DIV_4_0);
-    ADC_setPrescaler(ADCB_BASE, ADC_CLK_DIV_4_0);
 
     //
     // Set resolution and signal mode (see #defines above) and load
@@ -588,23 +648,19 @@ void initADCs(void)
     //
 #if(EX_ADC_RESOLUTION == 12)
     ADC_setMode(ADCA_BASE, ADC_RESOLUTION_12BIT, ADC_MODE_SINGLE_ENDED);
-    ADC_setMode(ADCB_BASE, ADC_RESOLUTION_12BIT, ADC_MODE_SINGLE_ENDED);
 #elif(EX_ADC_RESOLUTION == 16)
     ADC_setMode(ADCA_BASE, ADC_RESOLUTION_16BIT, ADC_MODE_DIFFERENTIAL);
-    ADC_setMode(ADCB_BASE, ADC_RESOLUTION_16BIT, ADC_MODE_DIFFERENTIAL);
 #endif
 
     //
     // Set pulse positions to late
     //
     ADC_setInterruptPulseMode(ADCA_BASE, ADC_PULSE_END_OF_CONV);
-    ADC_setInterruptPulseMode(ADCB_BASE, ADC_PULSE_END_OF_CONV);
 
     //
     // Power up the ADCs and then delay for 1 ms
     //
     ADC_enableConverter(ADCA_BASE);
-    ADC_enableConverter(ADCB_BASE);
 
     DEVICE_DELAY_US(1000);
 }
@@ -624,13 +680,9 @@ void initADCSOCs(void)
     //   of 64 (320 ns at a 200MHz SYSCLK rate) will be used.
     //
 #if(EX_ADC_RESOLUTION == 12)
-    ADC_setupSOC(ADCA_BASE, ADC_SOC_NUMBER0, ADC_TRIGGER_SW_ONLY,
-                 ADC_CH_ADCIN0, 15);
-    ADC_setupSOC(ADCA_BASE, ADC_SOC_NUMBER1, ADC_TRIGGER_SW_ONLY,
+    ADC_setupSOC(ADCA_BASE, ADC_SOC_NUMBER1, ADC_TRIGGER_SW_ONLY,       //A1, potentiometer
                  ADC_CH_ADCIN1, 15);
 #elif(EX_ADC_RESOLUTION == 16)
-    ADC_setupSOC(ADCA_BASE, ADC_SOC_NUMBER0, ADC_TRIGGER_SW_ONLY,
-                 ADC_CH_ADCIN0, 64);
     ADC_setupSOC(ADCA_BASE, ADC_SOC_NUMBER1, ADC_TRIGGER_SW_ONLY,
                  ADC_CH_ADCIN1, 64);
 #endif
@@ -643,34 +695,8 @@ void initADCSOCs(void)
     ADC_enableInterrupt(ADCA_BASE, ADC_INT_NUMBER1);
     ADC_clearInterruptStatus(ADCA_BASE, ADC_INT_NUMBER1);
 
-    //
-    // Configure SOCs of ADCB
-    // - SOC0 will convert pin B0.
-    // - SOC1 will convert pin B1.
-    // - Both will be triggered by software only.
-    // - For 12-bit resolution, a sampling window of 15 (75 ns at a 200MHz
-    //   SYSCLK rate) will be used.  For 16-bit resolution, a sampling window
-    //   of 64 (320 ns at a 200MHz SYSCLK rate) will be used.
-    //
-#if(EX_ADC_RESOLUTION == 12)
-    ADC_setupSOC(ADCB_BASE, ADC_SOC_NUMBER0, ADC_TRIGGER_SW_ONLY,
-                 ADC_CH_ADCIN0, 15);
-    ADC_setupSOC(ADCB_BASE, ADC_SOC_NUMBER1, ADC_TRIGGER_SW_ONLY,
-                 ADC_CH_ADCIN1, 15);
-#elif(EX_ADC_RESOLUTION == 16)
-    ADC_setupSOC(ADCB_BASE, ADC_SOC_NUMBER0, ADC_TRIGGER_SW_ONLY,
-                 ADC_CH_ADCIN0, 64);
-    ADC_setupSOC(ADCB_BASE, ADC_SOC_NUMBER1, ADC_TRIGGER_SW_ONLY,
-                 ADC_CH_ADCIN1, 64);
-#endif
 
-    //
-    // Set SOC1 to set the interrupt 1 flag. Enable the interrupt and make
-    // sure its flag is cleared.
-    //
-    ADC_setInterruptSource(ADCB_BASE, ADC_INT_NUMBER1, ADC_SOC_NUMBER1);
-    ADC_enableInterrupt(ADCB_BASE, ADC_INT_NUMBER1);
-    ADC_clearInterruptStatus(ADCB_BASE, ADC_INT_NUMBER1);
+
 }
 
 

@@ -10,8 +10,10 @@ GEN_OPTS__FLAG :=
 GEN_CMDS__FLAG := 
 
 ORDERED_OBJS += \
+"./Trigger3ADCs.obj" \
 "./board.obj" \
 "./main.obj" \
+"./sampling.obj" \
 "./device/F2837xD_CodeStartBranch.obj" \
 "./device/device.obj" \
 "../2837xD_RAM_lnk_cpu1.cmd" \
@@ -160,8 +162,8 @@ emote-controller_driverlib.hex: $(EXE_OUTPUTS)
 # Other Targets
 clean:
 	-$(RM) $(BIN_OUTPUTS__QUOTED)$(GEN_FILES__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "board.obj" "main.obj" "device\F2837xD_CodeStartBranch.obj" "device\device.obj" 
-	-$(RM) "board.d" "main.d" "device\device.d" 
+	-$(RM) "Trigger3ADCs.obj" "board.obj" "main.obj" "sampling.obj" "device\F2837xD_CodeStartBranch.obj" "device\device.obj" 
+	-$(RM) "Trigger3ADCs.d" "board.d" "main.d" "sampling.d" "device\device.d" 
 	-$(RM) "device\F2837xD_CodeStartBranch.d" 
 	-@echo 'Finished clean'
 	-@echo ' '

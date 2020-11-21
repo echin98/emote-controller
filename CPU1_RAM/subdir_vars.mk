@@ -12,27 +12,39 @@ LIB_SRCS += \
 C:/ti/C2000Ware_3_03_00_00_Software/driverlib/f2837xd/driverlib/ccs/Debug/driverlib.lib 
 
 C_SRCS += \
+../Trigger3ADCs.c \
 ../board.c \
-../main.c 
+../main.c \
+../sampling.c 
 
 C_DEPS += \
+./Trigger3ADCs.d \
 ./board.d \
-./main.d 
+./main.d \
+./sampling.d 
 
 OBJS += \
+./Trigger3ADCs.obj \
 ./board.obj \
-./main.obj 
+./main.obj \
+./sampling.obj 
 
 OBJS__QUOTED += \
+"Trigger3ADCs.obj" \
 "board.obj" \
-"main.obj" 
+"main.obj" \
+"sampling.obj" 
 
 C_DEPS__QUOTED += \
+"Trigger3ADCs.d" \
 "board.d" \
-"main.d" 
+"main.d" \
+"sampling.d" 
 
 C_SRCS__QUOTED += \
+"../Trigger3ADCs.c" \
 "../board.c" \
-"../main.c" 
+"../main.c" \
+"../sampling.c" 
 
 
