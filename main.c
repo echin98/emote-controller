@@ -264,7 +264,7 @@ void main(void)
         //
 /* Sampling stuff */
 
-        EPWM_enableADCTrigger(EPWM4_BASE, EPWM_SOC_A); //SOCA AND SOCB can trigger ADCA and ADCB synchronously w/o overlapping
+        /*EPWM_enableADCTrigger(EPWM4_BASE, EPWM_SOC_A); //SOCA AND SOCB can trigger ADCA and ADCB synchronously w/o overlapping
         EPWM_setTimeBaseCounterMode(EPWM4_BASE, EPWM_COUNTER_MODE_UP);
 
 
@@ -303,7 +303,7 @@ void main(void)
         //
         // Hit run again to get updated conversions.
         //
-        ESTOP0;
+        ESTOP0;*/
 
     }
 
