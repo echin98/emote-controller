@@ -1,3 +1,4 @@
+/*
 //#############################################################################
 //
 // FILE:   adc_ex2_soc_epwm.c
@@ -445,3 +446,4 @@ __interrupt void adcC1ISR(void)
     //
     Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP1); //Go over ack groups
 }
+*/
