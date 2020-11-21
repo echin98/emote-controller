@@ -111,7 +111,7 @@ __interrupt void gpioInterruptHandler(void);
 // Main
 //
 void main(void)
-{
+ {
     GPIO_setPinConfig(GPIO_32_GPIO32);
     GPIO_setDirectionMode(HALLA_PIN,GPIO_DIR_MODE_IN);
     GPIO_setPadConfig(HALLA_PIN, GPIO_PIN_TYPE_STD);

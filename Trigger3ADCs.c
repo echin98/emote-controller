@@ -164,11 +164,12 @@ void main(void)
         //
         // Start ePWM1/EPWM2, enabling SOCA-b and putting the counter in up-count mode
         //
-        EPWM_enableADCTrigger(EPWM1_BASE, EPWM_SOC_A); //SOCA AND SOCB can trigger ADCA and ADCB synchronously w/o overlapping
-        EPWM_enableADCTrigger(EPWM1_BASE, EPWM_SOC_B);
-        EPWM_enableADCTrigger(EPWM2_BASE, EPWM_SOC_A); // Use a seperate pwm for ADCC so SOCA in pwm1 doesnt overlap
-        EPWM_setTimeBaseCounterMode(EPWM1_BASE, EPWM_COUNTER_MODE_UP);
-        EPWM_setTimeBaseCounterMode(EPWM2_BASE, EPWM_COUNTER_MODE_UP);
+
+        EPWM_enableADCTrigger(EPWM4_BASE, EPWM_SOC_A); //SOCA AND SOCB can trigger ADCA and ADCB synchronously w/o overlapping
+        EPWM_enableADCTrigger(EPWM4_BASE, EPWM_SOC_B);
+        EPWM_enableADCTrigger(EPWM5_BASE, EPWM_SOC_A); // Use a seperate pwm for ADCC so SOCA in pwm4 doesnt overlap
+        EPWM_setTimeBaseCounterMode(EPWM4_BASE, EPWM_COUNTER_MODE_UP);
+        EPWM_setTimeBaseCounterMode(EPWM5_BASE, EPWM_COUNTER_MODE_UP);
 
 
         //
@@ -183,11 +184,12 @@ void main(void)
         //
         // Stop ePWM1/ePWM1, disabling SOCA-B and freezing the counter
         //
-        EPWM_disableADCTrigger(EPWM1_BASE, EPWM_SOC_A);
-        EPWM_disableADCTrigger(EPWM1_BASE, EPWM_SOC_B);
-        EPWM_disableADCTrigger(EPWM2_BASE, EPWM_SOC_A);
-        EPWM_setTimeBaseCounterMode(EPWM1_BASE, EPWM_COUNTER_MODE_STOP_FREEZE);
-        EPWM_setTimeBaseCounterMode(EPWM2_BASE, EPWM_COUNTER_MODE_STOP_FREEZE);
+
+        EPWM_disableADCTrigger(EPWM4_BASE, EPWM_SOC_A);
+        EPWM_disableADCTrigger(EPWM4_BASE, EPWM_SOC_B);
+        EPWM_disableADCTrigger(EPWM5_BASE, EPWM_SOC_A);
+        EPWM_setTimeBaseCounterMode(EPWM4_BASE, EPWM_COUNTER_MODE_STOP_FREEZE);
+        EPWM_setTimeBaseCounterMode(EPWM5_BASE, EPWM_COUNTER_MODE_STOP_FREEZE);
 
         //
         // Software breakpoint. At this point, conversion results are stored in
@@ -244,46 +246,47 @@ void initADC(void)
 }
 
 //
-// Function to configure ePWM1 to generate the SOC.
+// Function to configure ePWM4/5 to generate the SOC.
 //
 void initEPWM(void)
 {
     //
     // Disable SOCA/B
     //
-    EPWM_disableADCTrigger(EPWM1_BASE, EPWM_SOC_A);
-    EPWM_disableADCTrigger(EPWM1_BASE, EPWM_SOC_B);
-    EPWM_disableADCTrigger(EPWM2_BASE, EPWM_SOC_A);
+    EPWM_disableADCTrigger(EPWM4_BASE, EPWM_SOC_A);
+    EPWM_disableADCTrigger(EPWM4_BASE, EPWM_SOC_B);
+    EPWM_disableADCTrigger(EPWM5_BASE, EPWM_SOC_A);
 
     //
     // Configure the SOC to occur on the first up-count event
     //
-    EPWM_setADCTriggerSource(EPWM1_BASE, EPWM_SOC_A, EPWM_SOC_TBCTR_U_CMPA);
-    EPWM_setADCTriggerEventPrescale(EPWM1_BASE, EPWM_SOC_A, 1);
+    EPWM_setADCTriggerSource(EPWM4_BASE, EPWM_SOC_A, EPWM_SOC_TBCTR_U_CMPA);
+    EPWM_setADCTriggerEventPrescale(EPWM4_BASE, EPWM_SOC_A, 1);
 
-    EPWM_setADCTriggerSource(EPWM1_BASE, EPWM_SOC_B, EPWM_SOC_TBCTR_U_CMPB);
-    EPWM_setADCTriggerEventPrescale(EPWM1_BASE, EPWM_SOC_B, 1);
+    EPWM_setADCTriggerSource(EPWM4_BASE, EPWM_SOC_B, EPWM_SOC_TBCTR_U_CMPB);
+    EPWM_setADCTriggerEventPrescale(EPWM4_BASE, EPWM_SOC_B, 1);
 
-    EPWM_setADCTriggerSource(EPWM2_BASE, EPWM_SOC_A, EPWM_SOC_TBCTR_U_CMPA);
-    EPWM_setADCTriggerEventPrescale(EPWM2_BASE, EPWM_SOC_A, 1);
+    EPWM_setADCTriggerSource(EPWM5_BASE, EPWM_SOC_A, EPWM_SOC_TBCTR_U_CMPA);
+    EPWM_setADCTriggerEventPrescale(EPWM5_BASE, EPWM_SOC_A, 1);
 
     //
     // Set the compare A AND B values to 2048 and the period to 4096
     //
-    EPWM_setCounterCompareValue(EPWM1_BASE, EPWM_COUNTER_COMPARE_A, 0x0800);
-    EPWM_setCounterCompareValue(EPWM1_BASE, EPWM_COUNTER_COMPARE_B, 0x0800);
-    EPWM_setTimeBasePeriod(EPWM1_BASE, 0x1000);
+
+    EPWM_setCounterCompareValue(EPWM4_BASE, EPWM_COUNTER_COMPARE_A, 0x0800);
+    EPWM_setCounterCompareValue(EPWM4_BASE, EPWM_COUNTER_COMPARE_B, 0x0800);
+    EPWM_setTimeBasePeriod(EPWM4_BASE, 0x1000);
 
 
 
-    EPWM_setCounterCompareValue(EPWM2_BASE, EPWM_COUNTER_COMPARE_A, 0x0800);
-    EPWM_setTimeBasePeriod(EPWM2_BASE, 0x1000);
+    EPWM_setCounterCompareValue(EPWM5_BASE, EPWM_COUNTER_COMPARE_A, 0x0800);
+    EPWM_setTimeBasePeriod(EPWM5_BASE, 0x1000);
 
     //
     // Freeze the counter
     //
-    EPWM_setTimeBaseCounterMode(EPWM1_BASE, EPWM_COUNTER_MODE_STOP_FREEZE);
-    EPWM_setTimeBaseCounterMode(EPWM2_BASE, EPWM_COUNTER_MODE_STOP_FREEZE);
+    EPWM_setTimeBaseCounterMode(EPWM4_BASE, EPWM_COUNTER_MODE_STOP_FREEZE);
+    EPWM_setTimeBaseCounterMode(EPWM5_BASE, EPWM_COUNTER_MODE_STOP_FREEZE);
 }
 
 //
@@ -300,18 +303,18 @@ void initADCSOC(void)
     // 64 (320 ns at a 200MHz SYSCLK rate) will be used.
     //
 #if(EX_ADC_RESOLUTION == 12)
-       ADC_setupSOC(ADCA_BASE, ADC_SOC_NUMBER0, ADC_TRIGGER_EPWM1_SOCA,
+       ADC_setupSOC(ADCA_BASE, ADC_SOC_NUMBER0, ADC_TRIGGER_EPWM4_SOCA,
                     ADC_CH_ADCIN0, 15);
-       ADC_setupSOC(ADCB_BASE, ADC_SOC_NUMBER1, ADC_TRIGGER_EPWM1_SOCB, //Find out some definitions in this function
+       ADC_setupSOC(ADCB_BASE, ADC_SOC_NUMBER1, ADC_TRIGGER_EPWM4_SOCB, //Find out some definitions in this function
                            ADC_CH_ADCIN0, 15);
-       ADC_setupSOC(ADCC_BASE, ADC_SOC_NUMBER2, ADC_TRIGGER_EPWM2_SOCA,
+       ADC_setupSOC(ADCC_BASE, ADC_SOC_NUMBER2, ADC_TRIGGER_EPWM5_SOCA,
                            ADC_CH_ADCIN0, 15);
 #elif(EX_ADC_RESOLUTION == 16)
-       ADC_setupSOC(ADCA_BASE, ADC_SOC_NUMBER0, ADC_TRIGGER_EPWM1_SOCA,
+       ADC_setupSOC(ADCA_BASE, ADC_SOC_NUMBER0, ADC_TRIGGER_EPWM4_SOCA,
                     ADC_CH_ADCIN0, 64);
-       ADC_setupSOC(ADCB_BASE, ADC_SOC_NUMBER1, ADC_TRIGGER_EPWM1_SOCB,
+       ADC_setupSOC(ADCB_BASE, ADC_SOC_NUMBER1, ADC_TRIGGER_EPWM4_SOCB,
                            ADC_CH_ADCIN0, 64);
-       ADC_setupSOC(ADCC_BASE, ADC_SOC_NUMBER2, ADC_TRIGGER_EPWM2_SOCA,
+       ADC_setupSOC(ADCC_BASE, ADC_SOC_NUMBER2, ADC_TRIGGER_EPWM5_SOCA,
                            ADC_CH_ADCIN0, 64);
 #endif
 
