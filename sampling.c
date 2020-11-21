@@ -5,16 +5,45 @@
  *  Created on: Nov 21, 2020
  *      Author: ericc
  */
+#include "sampling.h"
 
+uint16_t adcAResults[RESULTS_BUFFER_SIZE];   // Buffer for results
+uint16_t adcBResults[RESULTS_BUFFER_SIZE];
+uint16_t adcCResults[RESULTS_BUFFER_SIZE];
+volatile uint16_t indexA2;                              // Index into result buffer
+volatile uint16_t bufferFullA2;                // Flag to indicate buffer is full
+volatile uint16_t indexB2;                              // Index into result buffer
+volatile uint16_t bufferFullB2;                // Flag to indicate buffer is full
+volatile uint16_t indexC2;                              // Index into result buffer
+volatile uint16_t bufferFullC2;                // Flag to indicate buffer is full
+
+volatile uint16_t test_vals = 0;
+
+void s_resetBufferA2(){indexA2 = 0; bufferFullA2 = 0;}
+void s_resetBufferB2(){indexB2 = 0; bufferFullB2 = 0;}
+void s_resetBufferC2(){indexC2 = 0; bufferFullC2 = 0;}
+
+bool s_setBufferFullA2(bool val){bufferFullA2=val; return;}
+bool s_setBufferFullB2(bool val){bufferFullB2=val; return;}
+bool s_setBufferFullC2(bool val){bufferFullC2=val; return;}
+
+bool s_getBufferFullA2(){return bufferFullA2;}
+bool s_getBufferFullB2(){return bufferFullB2;}
+bool s_getBufferFullC2(){return bufferFullC2;}
+
+uint16_t* s_getA2Buffer(void){return adcAResults;}
+uint16_t* s_getB2Buffer(void){return adcBResults;}
+uint16_t* s_getC2Buffer(void){return adcCResults;}
 
 void sampling_init(void)
 {
     sampling_initADCs();
     sampling_initEPWM();
     sampling_initADCSOCs();
+    int index;
     for(index = 0; index < RESULTS_BUFFER_SIZE; index++)
     {
-        adcAResults[index] = 0;
+        adcAResults[index] = 7;
         adcBResults[index] = 0;
         adcCResults[index] = 0;
     }
@@ -23,8 +52,12 @@ void sampling_init(void)
     //
 
 
-    index = 0;
-    bufferFull = 0;
+    indexA2 = 0;
+    bufferFullA2 = 0;
+    indexB2 = 0;
+    bufferFullB2 = 0;
+    indexC2 = 0;
+    bufferFullC2 = 0;
 
     //
     // Enable ADC interrupt for all three ADC's
@@ -34,7 +67,7 @@ void sampling_init(void)
     Interrupt_enable(INT_ADCC2);
 }
 
-void initEPWM(void)
+void sampling_initEPWM(void)
 {
     //
     // Disable SOCA/B
@@ -158,18 +191,20 @@ void sampling_initADCs(void)
 //
 __interrupt void adcA2ISR(void)
 {
-    //
-    // Add the latest result to the buffer
-    //
-    adcAResults[index++] = ADC_readResult(ADCARESULT_BASE, ADC_SOC_NUMBER2);
 
     //
     // Set the bufferFull flag if the buffer is full
     //
     if(RESULTS_BUFFER_SIZE <= indexA2)
     {
-        indexA2 = 0;
         bufferFullA2 = 1;
+    }
+    else
+    {
+        //
+        // Add the latest result to the buffer
+        //
+        adcAResults[indexA2++] = ADC_readResult(ADCARESULT_BASE, ADC_SOC_NUMBER2);
     }
 
     //
@@ -189,23 +224,27 @@ __interrupt void adcA2ISR(void)
     //
     // Acknowledge the interrupt
     //
+    /*if(!ADC_getInterruptStatus(ADCB_BASE, ADC_INT_NUMBER2) &&
+            !ADC_getInterruptStatus(ADCC_BASE, ADC_INT_NUMBER2))*/
     Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP10);
 }
 
 __interrupt void adcB2ISR(void)
 {
-    //
-    // Add the latest result to the buffer
-    //
-    adcBResults[indexA2++] = ADC_readResult(ADCBRESULT_BASE, ADC_SOC_NUMBER2);
 
     //
     // Set the bufferFull flag if the buffer is full
     //
     if(RESULTS_BUFFER_SIZE <= indexB2)
     {
-        indexB2 = 0;
         bufferFullB2 = 1;
+    }
+    else
+    {
+        //
+        // Add the latest result to the buffer
+        //
+        adcBResults[indexB2++] = ADC_readResult(ADCBRESULT_BASE, ADC_SOC_NUMBER2);
     }
 
     //
@@ -230,32 +269,34 @@ __interrupt void adcB2ISR(void)
 
 __interrupt void adcC2ISR(void)
 {
-    //
-    // Add the latest result to the buffer
-    //
-    adcCResults[index++] = ADC_readResult(ADCCRESULT_BASE, ADC_SOC_NUMBER2);
 
     //
     // Set the bufferFull flag if the buffer is full
     //
     if(RESULTS_BUFFER_SIZE <= indexC2)
     {
-        indexC2 = 0;
         bufferFullC2 = 1;
+    }
+    else
+    {
+        //
+        // Add the latest result to the buffer
+        //
+        adcCResults[indexC2++] = ADC_readResult(ADCCRESULT_BASE, ADC_SOC_NUMBER2);
     }
 
     //
     // Clear the interrupt flag
     //
-    ADC_clearInterruptStatus(ADCC_BASE, ADC_INT_NUMBER3);
+    ADC_clearInterruptStatus(ADCC_BASE, ADC_INT_NUMBER2);
 
     //
     // Check if overflow has occurred
     //
-    if(true == ADC_getInterruptOverflowStatus(ADCC_BASE, ADC_INT_NUMBER3))
+    if(true == ADC_getInterruptOverflowStatus(ADCC_BASE, ADC_INT_NUMBER2))
     {
-        ADC_clearInterruptOverflowStatus(ADCC_BASE, ADC_INT_NUMBER3);
-        ADC_clearInterruptStatus(ADCC_BASE, ADC_INT_NUMBER3);
+        ADC_clearInterruptOverflowStatus(ADCC_BASE, ADC_INT_NUMBER2);
+        ADC_clearInterruptStatus(ADCC_BASE, ADC_INT_NUMBER2);
     }
 
     //

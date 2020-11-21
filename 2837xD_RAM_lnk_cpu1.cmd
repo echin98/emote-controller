@@ -59,19 +59,22 @@ PAGE 1 :
 SECTIONS
 {
    codestart        : > BEGIN,     PAGE = 0
-   .text            : >> RAMD0 |  RAMLS0 | RAMLS1 | RAMLS2 | RAMLS3 | RAMLS4,   PAGE = 0
+//   .text            : >> RAMD0 |  RAMLS0 | RAMLS1 | RAMLS2 | RAMLS3 | RAMLS4,   PAGE = 0
+   .text            : >> RAMGS0 | RAMGS1 | RAMGS2 | RAMGS3| RAMGS4| RAMGS5,   PAGE = 1
    .cinit           : > RAMM0,     PAGE = 0
    .switch          : > RAMM0,     PAGE = 0
    .reset           : > RESET,     PAGE = 0, TYPE = DSECT /* not used, */
    .stack           : > RAMM1,     PAGE = 1
 
 #if defined(__TI_EABI__)
-   .bss             : > RAMLS5,    PAGE = 1
+// .bss             : > RAMLS5,    PAGE = 1
+   .bss             : > RAMLS0|RAMLS1|RAMLS2,    PAGE = 0
    .bss:output      : > RAMLS3,    PAGE = 0
    .init_array      : > RAMM0,     PAGE = 0
    .const           : > RAMLS5,    PAGE = 1
    .data            : > RAMLS5,    PAGE = 1
-   .sysmem          : > RAMLS5,    PAGE = 1
+   .sysmem             : > RAMLS0|RAMLS1|RAMLS2,    PAGE = 0
+//   .sysmem          : > RAMLS5,    PAGE = 1
 #else
    .pinit           : > RAMM0,     PAGE = 0
    .ebss            : > RAMLS5,    PAGE = 1

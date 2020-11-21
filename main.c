@@ -51,6 +51,8 @@
 #include "board.h"
 #include <stdint.h>
 #include <stdlib.h>
+#include "sampling.h"
+#include <stdio.h>
 
 #define GUARD_PD_US 500
 
@@ -188,8 +190,6 @@ void main(void)
     EPWM_configureSignal(EPWM2_BASE, &pwmSignal);
     EPWM_configureSignal(EPWM3_BASE, &pwmSignal);
 
-    //!! Add EPWM4 setup
-
     //
     // Configure phase between PWM1, PWM2 & PWM3.
     // PWM1 is configured as master and ePWM2 & 3
@@ -235,7 +235,7 @@ void main(void)
     float duty_cycle = 0.5;
     for(;;)
     {
-        /*ADC_forceSOC(ADCA_BASE, ADC_SOC_NUMBER1);
+        ADC_forceSOC(ADCA_BASE, ADC_SOC_NUMBER1);
         //
         // Wait for ADCA to complete, then acknowledge flag
         //
@@ -258,7 +258,7 @@ void main(void)
         if(dc<0.05) dc = 0;
         float dc_temp = dc;
         set_duty_cycle(dc);
-        //ESTOP0;*/
+        //ESTOP0;
         //
         // Start ePWM1/EPWM2, enabling SOCA-b and putting the counter in up-count mode
         //
@@ -272,12 +272,9 @@ void main(void)
         // Wait while ePWM1 causes ADC conversions which then cause interrupts.
         // When the results buffer is filled, the bufferFull flag will be set.
         //
-        while(bufferFullA2 == 0)
+        while(s_getBufferFullA2() == 0)
         {
         }
-        bufferFullA2 = 0;     // Clear the buffer full flag
-        bufferFullB2 = 0;
-        bufferFullC2 = 0;
 
         //
         // Stop ePWM1/ePWM1, disabling SOCA-B and freezing the counter
@@ -285,6 +282,20 @@ void main(void)
 
         EPWM_disableADCTrigger(EPWM4_BASE, EPWM_SOC_A);
         EPWM_setTimeBaseCounterMode(EPWM4_BASE, EPWM_COUNTER_MODE_STOP_FREEZE);
+        s_resetBufferA2();     // Clear the buffer full flag
+        s_resetBufferB2();
+        s_resetBufferC2();
+
+
+        uint16_t* tempA = s_getA2Buffer();
+        uint16_t* tempB = s_getB2Buffer();
+        uint16_t* tempC = s_getC2Buffer();
+
+        uint8_t read_idx;
+        printf("starting\n");
+        for(read_idx = 0; read_idx<RESULTS_BUFFER_SIZE; read_idx++){
+            printf("%u\n",tempA[read_idx]);
+        }
 
         //
         // Software breakpoint. At this point, conversion results are stored in

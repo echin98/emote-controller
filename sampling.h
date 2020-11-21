@@ -4,21 +4,28 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#ifndef SAMPLING
+#define SAMPLING
+
 #define RESULTS_BUFFER_SIZE     256
 #define EX_ADC_RESOLUTION       12
 
 
-uint16_t adcAResults[RESULTS_BUFFER_SIZE];   // Buffer for results
-uint16_t adcBResults[RESULTS_BUFFER_SIZE];
-uint16_t adcCResults[RESULTS_BUFFER_SIZE];
-volatile uint16_t indexA2;                              // Index into result buffer
-volatile uint16_t bufferFullA2;                // Flag to indicate buffer is full
-volatile uint16_t indexB2;                              // Index into result buffer
-volatile uint16_t bufferFullB2;                // Flag to indicate buffer is full
-volatile uint16_t indexC2;                              // Index into result buffer
-volatile uint16_t bufferFullC2;                // Flag to indicate buffer is full
+uint16_t* s_getA2Buffer(void);
+uint16_t* s_getB2Buffer(void);
+uint16_t* s_getC2Buffer(void);
 
+void s_resetBufferA2(void);
+void s_resetBufferB2(void);
+void s_resetBufferC2(void);
 
+bool s_setBufferFullA2(bool val);
+bool s_setBufferFullB2(bool val);
+bool s_setBufferFullC2(bool val);
+
+bool s_getBufferFullA2(void);
+bool s_getBufferFullB2(void);
+bool s_getBufferFullC2(void);
 void sampling_init(void);
 void sampling_initADCSOCs(void);
 void sampling_initEPWM(void);
@@ -26,6 +33,7 @@ void sampling_initADCs(void);
 
 
 //Interrupt handlers
-__interrupt void adcA1ISR(void);
-__interrupt void adcB1ISR(void);
-__interrupt void adcC1ISR(void);
+__interrupt void adcA2ISR(void);
+__interrupt void adcB2ISR(void);
+__interrupt void adcC2ISR(void);
+#endif
