@@ -4,15 +4,14 @@ MEMORY
 PAGE 0 :
    /* BEGIN is used for the "boot to SARAM" bootloader mode   */
 
-   BEGIN            : origin = 0x000000, length = 0x000002
-   RAMM0            : origin = 0x000123, length = 0x0002DD
-   RAMD0            : origin = 0x00B000, length = 0x000800
-   RAMLS0           : origin = 0x008000, length = 0x000800
-   RAMLS1           : origin = 0x008800, length = 0x000800
-   RAMLS2           : origin = 0x009000, length = 0x000800
-   RAMLS3           : origin = 0x009800, length = 0x000800
-   RAMLS4           : origin = 0x00A000, length = 0x000800
-   RESET            : origin = 0x3FFFC0, length = 0x000002
+   BEGIN           	: origin = 0x000000, length = 0x000002
+   RAMM0           	: origin = 0x000123, length = 0x0002DD
+   RAMD0           	: origin = 0x00B000, length = 0x000800
+   RAMLS0          	: origin = 0x008000, length = 0x000800
+   RAMLS1_LS2       : origin = 0x008800, length = 0x001000
+   RAMLS3      		: origin = 0x009800, length = 0x000800
+   RAMLS4      		: origin = 0x00A000, length = 0x000800
+   RESET           	: origin = 0x3FFFC0, length = 0x000002
 
 PAGE 1 :
 
@@ -44,49 +43,42 @@ PAGE 1 :
    RAMGS13     : origin = 0x019000, length = 0x001000     /* Only Available on F28379D, F28377D, F28375D devices. Remove line on other devices. */
    RAMGS14     : origin = 0x01A000, length = 0x001000     /* Only Available on F28379D, F28377D, F28375D devices. Remove line on other devices. */
    RAMGS15     : origin = 0x01B000, length = 0x000FF8     /* Only Available on F28379D, F28377D, F28375D devices. Remove line on other devices. */
-   
+
 //   RAMGS15_RSVD : origin = 0x01BFF8, length = 0x000008    /* Reserve and do not use for code as per the errata advisory "Memory: Prefetching Beyond Valid Memory" */
                                                             /* Only on F28379D, F28377D, F28375D devices. Remove line on other devices. */
 
-   CPU2TOCPU1RAM   : origin = 0x03F800, length = 0x000400
-   CPU1TOCPU2RAM   : origin = 0x03FC00, length = 0x000400
-
    CANA_MSG_RAM     : origin = 0x049000, length = 0x000800
    CANB_MSG_RAM     : origin = 0x04B000, length = 0x000800
+
+   CPU2TOCPU1RAM   : origin = 0x03F800, length = 0x000400
+   CPU1TOCPU2RAM   : origin = 0x03FC00, length = 0x000400
 }
 
 
 SECTIONS
 {
    codestart        : > BEGIN,     PAGE = 0
-//   .text            : >> RAMD0 |  RAMLS0 | RAMLS1 | RAMLS2 | RAMLS3 | RAMLS4,   PAGE = 0
-   .text            : >> RAMGS0 | RAMGS1 | RAMGS2 | RAMGS3| RAMGS4| RAMGS5,   PAGE = 1
+   .text.1            : >>RAMD0 |  RAMLS0 | RAMLS1_LS2 | RAMLS3 | RAMLS4,   PAGE = 0
+   .text            : >>RAMGS0|RAMGS1|RAMGS2|RAMGS3|RAMGS4, PAGE=1
    .cinit           : > RAMM0,     PAGE = 0
    .switch          : > RAMM0,     PAGE = 0
    .reset           : > RESET,     PAGE = 0, TYPE = DSECT /* not used, */
    .stack           : > RAMM1,     PAGE = 1
 
 #if defined(__TI_EABI__)
-// .bss             : > RAMLS5,    PAGE = 1
-   .bss             : > RAMLS0|RAMLS1|RAMLS2,    PAGE = 0
+   .bss             : > RAMLS5|RAMGS6,    PAGE = 1
    .bss:output      : > RAMLS3,    PAGE = 0
    .init_array      : > RAMM0,     PAGE = 0
    .const           : > RAMLS5,    PAGE = 1
    .data            : > RAMLS5,    PAGE = 1
-   .sysmem             : > RAMLS0|RAMLS1|RAMLS2,    PAGE = 0
-//   .sysmem          : > RAMLS5,    PAGE = 1
+   .sysmem          : > RAMLS5|RAMGS6,    PAGE = 1
 #else
    .pinit           : > RAMM0,     PAGE = 0
    .ebss            : > RAMLS5,    PAGE = 1
    .econst          : > RAMLS5,    PAGE = 1
    .esysmem         : > RAMLS5,    PAGE = 1
 #endif
-
-   Filter_RegsFile  : > RAMGS0,    PAGE = 1
-
-
-   ramgs0           : > RAMGS0,    PAGE = 1
-   ramgs1           : > RAMGS1,    PAGE = 1
+   Filter_RegsFile  : > RAMGS0,	   PAGE = 1
 
 #ifdef __TI_COMPILER_VERSION__
    #if __TI_COMPILER_VERSION__ >= 15009000
@@ -112,11 +104,15 @@ SECTIONS
     }
 
     /* The following section definition are for SDFM examples */
-   Filter1_RegsFile : > RAMGS1, PAGE = 1, fill=0x1111
-   Filter2_RegsFile : > RAMGS2, PAGE = 1, fill=0x2222
-   Filter3_RegsFile : > RAMGS3, PAGE = 1, fill=0x3333
-   Filter4_RegsFile : > RAMGS4, PAGE = 1, fill=0x4444
-   Difference_RegsFile : >RAMGS5,   PAGE = 1, fill=0x3333
+   Filter1_RegsFile : > RAMGS1,	PAGE = 1, fill=0x1111
+   Filter2_RegsFile : > RAMGS2,	PAGE = 1, fill=0x2222
+   Filter3_RegsFile : > RAMGS3,	PAGE = 1, fill=0x3333
+   Filter4_RegsFile : > RAMGS4,	PAGE = 1, fill=0x4444
+   Difference_RegsFile : >RAMGS5, 	PAGE = 1, fill=0x3333
+
+   /* Allocate IQ math areas: */
+   IQmath			: > RAMLS0,     PAGE = 0            /* Math Code */
+   IQmathTables		: > RAMLS1_LS2, PAGE = 0
 }
 
 /*

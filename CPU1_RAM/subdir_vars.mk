@@ -14,36 +14,42 @@ C:/ti/C2000Ware_3_03_00_00_Software/driverlib/f2837xd/driverlib/ccs/Debug/driver
 C_SRCS += \
 ../Trigger3ADCs.c \
 ../board.c \
+../eqep_ex2_calculation.c \
 ../main.c \
 ../sampling.c 
 
 C_DEPS += \
 ./Trigger3ADCs.d \
 ./board.d \
+./eqep_ex2_calculation.d \
 ./main.d \
 ./sampling.d 
 
 OBJS += \
 ./Trigger3ADCs.obj \
 ./board.obj \
+./eqep_ex2_calculation.obj \
 ./main.obj \
 ./sampling.obj 
 
 OBJS__QUOTED += \
 "Trigger3ADCs.obj" \
 "board.obj" \
+"eqep_ex2_calculation.obj" \
 "main.obj" \
 "sampling.obj" 
 
 C_DEPS__QUOTED += \
 "Trigger3ADCs.d" \
 "board.d" \
+"eqep_ex2_calculation.d" \
 "main.d" \
 "sampling.d" 
 
 C_SRCS__QUOTED += \
 "../Trigger3ADCs.c" \
 "../board.c" \
+"../eqep_ex2_calculation.c" \
 "../main.c" \
 "../sampling.c" 
 

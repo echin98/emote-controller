@@ -53,6 +53,8 @@
 #include <stdlib.h>
 #include "sampling.h"
 #include <stdio.h>
+#include <IQmathLib.h>
+#include "eqep_ex2_calculation.h"
 
 #define GUARD_PD_US 500
 
@@ -87,7 +89,7 @@ enum switch_states{
 //
 // Globals
 //
-
+uint8_t state = STATE0;
 
 float duty_cycle = 0.5;
 uint8_t direction = REVERSE;
@@ -100,6 +102,35 @@ EPWM_SignalParams pwmSignal =
             EPWM_HSCLOCK_DIVIDER_1};
 
 uint16_t adcAResult1;
+
+/*----------------------EQEP Stuff -----------------------*/
+// .9999 / 4000 converted to IQ26 fixed point format
+#define MECH_SCALER     16776
+// 2 pole pairs in this example
+#define POLE_PAIRS      2
+// Angular offset between encoder and Phase A
+#define CAL_ANGLE       0
+// See Equation 5 in eqep_ex2_calculation.c
+#define SPEED_SCALER    ((((uint64_t)32 * DEVICE_SYSCLK_FREQ / 64) * 60) / (24000000))
+// Base/max rpm is 6000rpm
+#define BASE_RPM        6000
+
+void initEQEP(void);
+
+PosSpeed_Object posSpeed =
+{
+    0, 0, 0, 0,     // Initialize outputs to zero
+    MECH_SCALER,    // mechScaler
+    POLE_PAIRS,     // polePairs
+    CAL_ANGLE,      // calAngle
+    SPEED_SCALER,   // speedScaler
+    0,              // Initialize output to zero
+    BASE_RPM,       // baseRPM
+    0, 0, 0, 0      // Initialize outputs to zero
+};
+
+uint16_t interruptCount = 0;
+/*--------------------------------------------------------*/
 
 //
 // Function Prototypes
@@ -121,6 +152,19 @@ __interrupt void gpioInterruptHandler(void);
 //
 void main(void)
  {
+    /*ret_val = add_device("uart", _SSA,
+                         uart_open,
+                 uart_close,
+                 uart_read,
+                 uart_write,
+                 uart_lseek,
+                 uart_unlink,
+                 uart_rename);
+
+    fid = fopen("uart", "w");
+    freopen("uart:", "w", stdout);     // redirect stdout to uart
+    setvbuf(stdout, NULL, _IONBF, 0);  // turn off buffering for stdout
+    printf("Hello world!\r\n");*/
     GPIO_setPinConfig(GPIO_32_GPIO32);
     GPIO_setDirectionMode(HALLA_PIN,GPIO_DIR_MODE_IN);
     GPIO_setPadConfig(HALLA_PIN, GPIO_PIN_TYPE_STD);
@@ -180,6 +224,15 @@ void main(void)
     /* ADC SETUP */
 
     sampling_init();
+    /*------------------QEP SETUP--------------------*/
+    //
+    // Initialize GPIOs for use as EQEP1A, EQEP1B, and EQEP1I
+    //
+    GPIO_setPinConfig(GPIO_104_EQEP3A);
+    GPIO_setPadConfig(104, GPIO_PIN_TYPE_STD);
+
+    GPIO_setPinConfig(GPIO_105_EQEP3B);
+    GPIO_setPadConfig(105, GPIO_PIN_TYPE_STD);
 
     /* PWM SETUP */
 
@@ -231,8 +284,11 @@ void main(void)
     EINT;  // Enable Global interrupt INTM
     ERTM;  // Enable Global realtime interrupt DBGM
 
+    initEQEP();
+
     /* END PWM SETUP */
-    float duty_cycle = 0.5;
+    float dc = 0;
+    float P = 0.01;
     for(;;)
     {
         ADC_forceSOC(ADCA_BASE, ADC_SOC_NUMBER1);
@@ -245,7 +301,10 @@ void main(void)
         ADC_clearInterruptStatus(ADCA_BASE, ADC_INT_NUMBER1);
 
         adcAResult1 = ADC_readResult(ADCARESULT_BASE, ADC_SOC_NUMBER1);
-        float dc = 1.8*((float)adcAResult1/4096)-0.9;
+        DEVICE_DELAY_US(3000);
+        PosSpeed_calculate(&posSpeed);
+        dc = dc+P*(5-posSpeed.speedPR);
+        //dc = 1.8*((float)adcAResult1/4096)-0.9;
         if(dc<0){
             direction = REVERSE;
             dc = -dc;
@@ -254,10 +313,14 @@ void main(void)
             direction = FORWARD;
         }
 
-        if(dc>0.9)dc = 0.9;
+        if(dc>0.8)dc = 0.8;
         if(dc<0.05) dc = 0;
         float dc_temp = dc;
         set_duty_cycle(dc);
+        //switch_state_machine(RESET);
+
+        //printf("%i\n",posSpeed.speedPR);
+        //DEVICE_DELAY_US(100000);
         //ESTOP0;
         //
         // Start ePWM1/EPWM2, enabling SOCA-b and putting the counter in up-count mode
@@ -372,6 +435,48 @@ __interrupt void gpioInterruptHandler(void)
     Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP12); //subject to change
 }
 
+//
+// Function to configure eQEP1.
+//
+void initEQEP(void)
+{
+    //
+    // Configure the decoder for quadrature count mode
+    //
+    EQEP_setDecoderConfig(EQEP3_BASE, (EQEP_CONFIG_1X_RESOLUTION |
+                                       EQEP_CONFIG_QUADRATURE |
+                                       EQEP_CONFIG_NO_SWAP));
+    EQEP_setEmulationMode(EQEP3_BASE, EQEP_EMULATIONMODE_RUNFREE);
+
+    //
+    // Configure the position counter to reset on an index event
+    //
+    EQEP_setPositionCounterConfig(EQEP3_BASE, EQEP_POSITION_RESET_UNIT_TIME_OUT,
+                                  0xFFFFFFFF);
+
+    //
+    // Enable the unit timer, setting the frequency to 100 Hz
+    //
+    EQEP_enableUnitTimer(EQEP3_BASE, (DEVICE_SYSCLK_FREQ / 100));
+
+    //
+    // Configure the position counter to be latched on a unit time out
+    //
+    EQEP_setLatchMode(EQEP3_BASE, EQEP_LATCH_UNIT_TIME_OUT);
+
+    //
+    // Enable the eQEP1 module
+    //
+    EQEP_enableModule(EQEP3_BASE);
+
+    //
+    // Configure and enable the edge-capture unit. The capture clock divider is
+    // SYSCLKOUT/64. The unit-position event divider is QCLK/32.
+    //
+    EQEP_setCaptureConfig(EQEP3_BASE, EQEP_CAPTURE_CLK_DIV_64,
+                          EQEP_UNIT_POS_EVNT_DIV_32);
+    EQEP_enableCapture(EQEP3_BASE);
+}
 
 //
 // set_duty_cycle - Set the duty cycle of the power control PWM
@@ -419,7 +524,6 @@ void configurePhase(uint32_t base, uint32_t masterBase, uint16_t phaseVal)
 
 uint8_t switch_state_machine(enum switch_commands command)
 {
-    static uint8_t state = STATE0;
     if(enable){
         switch(state){
             case STATE0:
