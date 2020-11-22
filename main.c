@@ -232,10 +232,11 @@ void main(void)
     ERTM;  // Enable Global realtime interrupt DBGM
 
     /* END PWM SETUP */
-    float duty_cycle = 0.5;
+    float dc = 0.5;
+    set_duty_cycle(dc);
     for(;;)
     {
-        ADC_forceSOC(ADCA_BASE, ADC_SOC_NUMBER1);
+        /*ADC_forceSOC(ADCA_BASE, ADC_SOC_NUMBER1);
         //
         // Wait for ADCA to complete, then acknowledge flag
         //
@@ -245,7 +246,7 @@ void main(void)
         ADC_clearInterruptStatus(ADCA_BASE, ADC_INT_NUMBER1);
 
         adcAResult1 = ADC_readResult(ADCARESULT_BASE, ADC_SOC_NUMBER1);
-        float dc = 1.8*((float)adcAResult1/4096)-0.9;
+        dc = 1.8*((float)adcAResult1/4096)-0.9;
         if(dc<0){
             direction = REVERSE;
             dc = -dc;
@@ -256,15 +257,75 @@ void main(void)
 
         if(dc>0.9)dc = 0.9;
         if(dc<0.05) dc = 0;
-        float dc_temp = dc;
-        set_duty_cycle(dc);
+        float dc_temp = dc;*/
+
         //ESTOP0;
         //
         // Start ePWM1/EPWM2, enabling SOCA-b and putting the counter in up-count mode
         //
 /* Sampling stuff */
+        Interrupt_enable(INT_XINT1);
+        Interrupt_enable(INT_XINT2);
+        Interrupt_enable(INT_XINT3);
 
-        /*EPWM_enableADCTrigger(EPWM4_BASE, EPWM_SOC_A); //SOCA AND SOCB can trigger ADCA and ADCB synchronously w/o overlapping
+        uint8_t pinVal = GPIO_readPin(HALLA_PIN)<<2 | GPIO_readPin(HALLB_PIN)<<1 | GPIO_readPin(HALLC_PIN);
+        if(direction){
+            switch(pinVal){
+            case 0b101:
+                switch_state_machine(SET1);
+                break;
+            case 0b100:
+                switch_state_machine(SET2);
+                break;
+            case 0b110:
+                switch_state_machine(SET3);
+                break;
+            case 0b010:
+                switch_state_machine(SET4);
+                break;
+            case 0b011:
+                switch_state_machine(SET5);
+                break;
+            case 0b001:
+                switch_state_machine(SET6);
+                break;
+            default:        //catch errors
+                switch_state_machine(RESET);
+                break;
+
+            }
+        }
+        else
+        {
+            switch(pinVal){
+            case 0b101:
+                switch_state_machine(SET4);
+                break;
+            case 0b100:
+                switch_state_machine(SET5);
+                break;
+            case 0b110:
+                switch_state_machine(SET6);
+                break;
+            case 0b010:
+                switch_state_machine(SET1);
+                break;
+            case 0b011:
+                switch_state_machine(SET2);
+                break;
+            case 0b001:
+                switch_state_machine(SET3);
+                break;
+            default:        //catch errors
+                switch_state_machine(RESET);
+                break;
+
+            }
+        }
+
+        DEVICE_DELAY_US(3000000);
+
+        EPWM_enableADCTrigger(EPWM4_BASE, EPWM_SOC_A); //SOCA AND SOCB can trigger ADCA and ADCB synchronously w/o overlapping
         EPWM_setTimeBaseCounterMode(EPWM4_BASE, EPWM_COUNTER_MODE_UP);
 
 
@@ -290,11 +351,28 @@ void main(void)
         uint16_t* tempA = s_getA2Buffer();
         uint16_t* tempB = s_getB2Buffer();
         uint16_t* tempC = s_getC2Buffer();
+        Interrupt_disable(INT_XINT1);
+        Interrupt_disable(INT_XINT2);
+        Interrupt_disable(INT_XINT3);
+
+        GPIO_writePin(HSA_PIN,0);
+        GPIO_writePin(LSA_PIN,0);
+        GPIO_writePin(HSB_PIN,0);
+        GPIO_writePin(LSB_PIN,0);
+        GPIO_writePin(HSC_PIN,0);
+        GPIO_writePin(LSC_PIN,0);
+
+        GPIO_setPinConfig(HSA_GPIO);
+        GPIO_setPinConfig(LSA_GPIO);
+        GPIO_setPinConfig(HSB_GPIO);
+        GPIO_setPinConfig(LSB_GPIO);
+        GPIO_setPinConfig(HSC_GPIO);
+        GPIO_setPinConfig(LSC_GPIO);
 
         uint8_t read_idx;
         printf("starting\n");
         for(read_idx = 0; read_idx<RESULTS_BUFFER_SIZE; read_idx++){
-            printf("%u\n",tempA[read_idx]);
+            printf("%u\t%u\t%u\n",tempA[read_idx],tempB[read_idx],tempC[read_idx]);
         }
 
         //
@@ -303,7 +381,8 @@ void main(void)
         //
         // Hit run again to get updated conversions.
         //
-        ESTOP0;*/
+
+        ESTOP0;
 
     }
 

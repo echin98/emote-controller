@@ -81,11 +81,11 @@ void sampling_initEPWM(void)
     EPWM_setADCTriggerEventPrescale(EPWM4_BASE, EPWM_SOC_A, 1);
 
     //
-    // Set the compare A AND B values to 2048 and the period to 4096
+    // Set the compare A AND B values to 256 and the period to 512
     //
 
-    EPWM_setCounterCompareValue(EPWM4_BASE, EPWM_COUNTER_COMPARE_A, 0x0800);
-    EPWM_setTimeBasePeriod(EPWM4_BASE, 0x1000);
+    EPWM_setCounterCompareValue(EPWM4_BASE, EPWM_COUNTER_COMPARE_A, 256); //50% duty cycle
+    EPWM_setTimeBasePeriod(EPWM4_BASE, 512); // ~20 kHz
 
     //
     // Freeze the counter

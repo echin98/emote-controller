@@ -7,7 +7,7 @@
 #ifndef SAMPLING
 #define SAMPLING
 
-#define RESULTS_BUFFER_SIZE     256
+#define RESULTS_BUFFER_SIZE     512
 #define EX_ADC_RESOLUTION       12
 
 
