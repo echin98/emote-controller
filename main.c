@@ -1,3 +1,7 @@
+
+// WARNING: DO NOT RUN THIS BRANC WITH A MOTOR CONNECTED!
+
+
 //#############################################################################
 //
 // FILE:   empty_driverlib_main.c
@@ -155,13 +159,13 @@ void main(void)
     GPIO_setInterruptType(GPIO_INT_XINT2, GPIO_INT_TYPE_BOTH_EDGES);
     GPIO_setInterruptType(GPIO_INT_XINT3, GPIO_INT_TYPE_BOTH_EDGES);
 
-    GPIO_setInterruptPin(HALLA_PIN, GPIO_INT_XINT1);
-    GPIO_setInterruptPin(HALLB_PIN, GPIO_INT_XINT2);
-    GPIO_setInterruptPin(HALLC_PIN, GPIO_INT_XINT3);
+    //GPIO_setInterruptPin(HALLA_PIN, GPIO_INT_XINT1);
+    //GPIO_setInterruptPin(HALLB_PIN, GPIO_INT_XINT2);
+    //GPIO_setInterruptPin(HALLC_PIN, GPIO_INT_XINT3);
 
-    GPIO_enableInterrupt(GPIO_INT_XINT1);
-    GPIO_enableInterrupt(GPIO_INT_XINT2);
-    GPIO_enableInterrupt(GPIO_INT_XINT3);
+    //GPIO_enableInterrupt(GPIO_INT_XINT1);
+    //GPIO_enableInterrupt(GPIO_INT_XINT2);
+    //GPIO_enableInterrupt(GPIO_INT_XINT3);
 
     Interrupt_register(INT_ADCA2, &adcA2ISR);
     Interrupt_register(INT_ADCB2, &adcB2ISR);
@@ -175,9 +179,9 @@ void main(void)
     Interrupt_register(INT_XINT2, &gpioInterruptHandler);
     Interrupt_register(INT_XINT3, &gpioInterruptHandler);
 
-    Interrupt_enable(INT_XINT1);
-    Interrupt_enable(INT_XINT2);
-    Interrupt_enable(INT_XINT3);
+    //Interrupt_enable(INT_XINT1);
+    //Interrupt_enable(INT_XINT2);
+    //Interrupt_enable(INT_XINT3);
 
     /* END INTERRUPT SETUP */
 
@@ -224,7 +228,7 @@ void main(void)
     //
     // Enable interrupts required for this example
     //
-    Interrupt_enable(INT_EPWM1);
+    //Interrupt_enable(INT_EPWM1);
 
     //
     // Set up ADCs, initializing the SOCs to be triggered by software
@@ -240,150 +244,79 @@ void main(void)
     set_duty_cycle(dc);
     for(;;)
     {
-        /*ADC_forceSOC(ADCA_BASE, ADC_SOC_NUMBER1);
-        //
-        // Wait for ADCA to complete, then acknowledge flag
-        //
-        while(ADC_getInterruptStatus(ADCA_BASE, ADC_INT_NUMBER1) == false)
-        {
-        }
-        ADC_clearInterruptStatus(ADCA_BASE, ADC_INT_NUMBER1);
-
-        adcAResult1 = ADC_readResult(ADCARESULT_BASE, ADC_SOC_NUMBER1);
-        dc = 1.8*((float)adcAResult1/4096)-0.9;
-        if(dc<0){
-            direction = REVERSE;
-            dc = -dc;
-        }
-        else{
-            direction = FORWARD;
-        }
-
-        if(dc>0.9)dc = 0.9;
-        if(dc<0.05) dc = 0;
-        float dc_temp = dc;*/
-
-        //ESTOP0;
-        //
-        // Start ePWM1/EPWM2, enabling SOCA-b and putting the counter in up-count mode
-        //
 /* Sampling stuff */
-        Interrupt_enable(INT_XINT1);
-        Interrupt_enable(INT_XINT2);
-        Interrupt_enable(INT_XINT3);
-
-        uint8_t pinVal = GPIO_readPin(HALLA_PIN)<<2 | GPIO_readPin(HALLB_PIN)<<1 | GPIO_readPin(HALLC_PIN);
-        if(direction){
-            switch(pinVal){
-            case 0b101:
-                switch_state_machine(SET1);
-                break;
-            case 0b100:
-                switch_state_machine(SET2);
-                break;
-            case 0b110:
-                switch_state_machine(SET3);
-                break;
-            case 0b010:
-                switch_state_machine(SET4);
-                break;
-            case 0b011:
-                switch_state_machine(SET5);
-                break;
-            case 0b001:
-                switch_state_machine(SET6);
-                break;
-            default:        //catch errors
-                switch_state_machine(RESET);
-                break;
-
-            }
-        }
-        else
+        char setting = getchar();
+        if(setting == 'v')
         {
-            switch(pinVal){
-            case 0b101:
-                switch_state_machine(SET4);
-                break;
-            case 0b100:
-                switch_state_machine(SET5);
-                break;
-            case 0b110:
-                switch_state_machine(SET6);
-                break;
-            case 0b010:
-                switch_state_machine(SET1);
-                break;
-            case 0b011:
-                switch_state_machine(SET2);
-                break;
-            case 0b001:
-                switch_state_machine(SET3);
-                break;
-            default:        //catch errors
-                switch_state_machine(RESET);
-                break;
+            GPIO_setPinConfig(HSA_GPIO);
+            GPIO_setPinConfig(LSA_GPIO);
+            GPIO_setPinConfig(HSB_GPIO);
+            GPIO_setPinConfig(LSB_GPIO);
+            GPIO_setPinConfig(HSC_GPIO);
+            GPIO_setPinConfig(LSC_GPIO);
 
-            }
+            GPIO_writePin(HSA_PIN,0);
+            GPIO_writePin(LSA_PIN,0);
+            GPIO_writePin(HSB_PIN,0);
+            GPIO_writePin(LSB_PIN,0);
+            GPIO_writePin(HSC_PIN,0);
+            GPIO_writePin(LSC_PIN,0);
         }
-
-        DEVICE_DELAY_US(3000000);
-
-        EPWM_enableADCTrigger(EPWM4_BASE, EPWM_SOC_A); //SOCA AND SOCB can trigger ADCA and ADCB synchronously w/o overlapping
-        EPWM_enableADCTrigger(EPWM4_BASE, EPWM_SOC_B);
-        EPWM_setTimeBaseCounterMode(EPWM4_BASE, EPWM_COUNTER_MODE_UP);
-
-
-        //
-        // Wait while ePWM1 causes ADC conversions which then cause interrupts.
-        // When the results buffer is filled, the bufferFull flag will be set.
-        //
-        while(s_getBufferFullA2() == 0)
+        else if(setting == 'i')
         {
+            GPIO_setPinConfig(HSA_GPIO);
+            GPIO_setPinConfig(LSA_GPIO);
+            GPIO_setPinConfig(HSB_GPIO);
+            GPIO_setPinConfig(LSB_GPIO);
+            GPIO_setPinConfig(HSC_GPIO);
+            GPIO_setPinConfig(LSC_GPIO);
+
+            GPIO_writePin(HSA_PIN,0);
+            GPIO_writePin(LSA_PIN,1);
+            GPIO_writePin(HSB_PIN,0);
+            GPIO_writePin(LSB_PIN,1);
+            GPIO_writePin(HSC_PIN,0);
+            GPIO_writePin(LSC_PIN,1);
         }
+        else if(setting == 'c')
+        {
+            EPWM_enableADCTrigger(EPWM4_BASE, EPWM_SOC_A); //SOCA AND SOCB can trigger ADCA and ADCB synchronously w/o overlapping
+            EPWM_enableADCTrigger(EPWM4_BASE, EPWM_SOC_B);
+            EPWM_setTimeBaseCounterMode(EPWM4_BASE, EPWM_COUNTER_MODE_UP);
+            //
+            // Wait while ePWM1 causes ADC conversions which then cause interrupts.
+            // When the results buffer is filled, the bufferFull flag will be set.
+            //
+            while(s_getBufferFullA2() == 0)
+            {
+            }
 
-        //
-        // Stop ePWM1/ePWM1, disabling SOCA-B and freezing the counter
-        //
+            //
+            // Stop ePWM1/ePWM1, disabling SOCA-B and freezing the counter
+            //
+            EPWM_disableADCTrigger(EPWM4_BASE, EPWM_SOC_A);
+            EPWM_disableADCTrigger(EPWM4_BASE, EPWM_SOC_B);
+            EPWM_setTimeBaseCounterMode(EPWM4_BASE, EPWM_COUNTER_MODE_STOP_FREEZE);
+            s_resetBufferA2();     // Clear the buffer full flag
+            s_resetBufferB2();
+            s_resetBufferC2();
+            s_resetBufferA3();
+            s_resetBufferB3();
+            s_resetBufferC3();
 
-        EPWM_disableADCTrigger(EPWM4_BASE, EPWM_SOC_A);
-        EPWM_disableADCTrigger(EPWM4_BASE, EPWM_SOC_B);
-        EPWM_setTimeBaseCounterMode(EPWM4_BASE, EPWM_COUNTER_MODE_STOP_FREEZE);
-        s_resetBufferA2();     // Clear the buffer full flag
-        s_resetBufferB2();
-        s_resetBufferC2();
-        s_resetBufferA3();
-        s_resetBufferB3();
-        s_resetBufferC3();
+            uint16_t* tempA = s_getA2Buffer();
+            uint16_t* tempB = s_getB2Buffer();
+            uint16_t* tempC = s_getC2Buffer();
+            uint16_t* tempA3 = s_getA3Buffer();
+            uint16_t* tempB3 = s_getB3Buffer();
+            uint16_t* tempC3 = s_getC3Buffer();
 
-        uint16_t* tempA = s_getA2Buffer();
-        uint16_t* tempB = s_getB2Buffer();
-        uint16_t* tempC = s_getC2Buffer();
-        uint16_t* tempA3 = s_getA3Buffer();
-        uint16_t* tempB3 = s_getB3Buffer();
-        uint16_t* tempC3 = s_getC3Buffer();
-        Interrupt_disable(INT_XINT1);
-        Interrupt_disable(INT_XINT2);
-        Interrupt_disable(INT_XINT3);
-
-        switch_state_machine(RESET);
-
-        uint8_t read_idx;
-        printf("starting\n");
-        for(read_idx = 0; read_idx<RESULTS_BUFFER_SIZE; read_idx++){
+            uint8_t read_idx = 0;
             printf("%u\t%u\t%u\t%u\t%u\t%u\n",
                    tempA[read_idx],tempB[read_idx],tempC[read_idx],
                    tempA3[read_idx],tempB3[read_idx],tempC3[read_idx]);
         }
 
-        //
-        // Software breakpoint. At this point, conversion results are stored in
-        // adcAResults.
-        //
-        // Hit run again to get updated conversions.
-        //
-
-        ESTOP0;
 
     }
 
