@@ -167,6 +167,10 @@ void main(void)
     Interrupt_register(INT_ADCB2, &adcB2ISR);
     Interrupt_register(INT_ADCC2, &adcC2ISR);
 
+    Interrupt_register(INT_ADCA3, &adcA3ISR);
+    Interrupt_register(INT_ADCB3, &adcB3ISR);
+    Interrupt_register(INT_ADCC3, &adcC3ISR);
+
     Interrupt_register(INT_XINT1, &gpioInterruptHandler); //create interrupt handler that would sync with sensing
     Interrupt_register(INT_XINT2, &gpioInterruptHandler);
     Interrupt_register(INT_XINT3, &gpioInterruptHandler);
@@ -326,6 +330,7 @@ void main(void)
         DEVICE_DELAY_US(3000000);
 
         EPWM_enableADCTrigger(EPWM4_BASE, EPWM_SOC_A); //SOCA AND SOCB can trigger ADCA and ADCB synchronously w/o overlapping
+        EPWM_enableADCTrigger(EPWM4_BASE, EPWM_SOC_B);
         EPWM_setTimeBaseCounterMode(EPWM4_BASE, EPWM_COUNTER_MODE_UP);
 
 
@@ -342,37 +347,33 @@ void main(void)
         //
 
         EPWM_disableADCTrigger(EPWM4_BASE, EPWM_SOC_A);
+        EPWM_disableADCTrigger(EPWM4_BASE, EPWM_SOC_B);
         EPWM_setTimeBaseCounterMode(EPWM4_BASE, EPWM_COUNTER_MODE_STOP_FREEZE);
         s_resetBufferA2();     // Clear the buffer full flag
         s_resetBufferB2();
         s_resetBufferC2();
-
+        s_resetBufferA3();
+        s_resetBufferB3();
+        s_resetBufferC3();
 
         uint16_t* tempA = s_getA2Buffer();
         uint16_t* tempB = s_getB2Buffer();
         uint16_t* tempC = s_getC2Buffer();
+        uint16_t* tempA3 = s_getA3Buffer();
+        uint16_t* tempB3 = s_getB3Buffer();
+        uint16_t* tempC3 = s_getC3Buffer();
         Interrupt_disable(INT_XINT1);
         Interrupt_disable(INT_XINT2);
         Interrupt_disable(INT_XINT3);
 
-        GPIO_writePin(HSA_PIN,0);
-        GPIO_writePin(LSA_PIN,0);
-        GPIO_writePin(HSB_PIN,0);
-        GPIO_writePin(LSB_PIN,0);
-        GPIO_writePin(HSC_PIN,0);
-        GPIO_writePin(LSC_PIN,0);
-
-        GPIO_setPinConfig(HSA_GPIO);
-        GPIO_setPinConfig(LSA_GPIO);
-        GPIO_setPinConfig(HSB_GPIO);
-        GPIO_setPinConfig(LSB_GPIO);
-        GPIO_setPinConfig(HSC_GPIO);
-        GPIO_setPinConfig(LSC_GPIO);
+        switch_state_machine(RESET);
 
         uint8_t read_idx;
         printf("starting\n");
         for(read_idx = 0; read_idx<RESULTS_BUFFER_SIZE; read_idx++){
-            printf("%u\t%u\t%u\n",tempA[read_idx],tempB[read_idx],tempC[read_idx]);
+            printf("%u\t%u\t%u\t%u\t%u\t%u\n",
+                   tempA[read_idx],tempB[read_idx],tempC[read_idx],
+                   tempA3[read_idx],tempB3[read_idx],tempC3[read_idx]);
         }
 
         //

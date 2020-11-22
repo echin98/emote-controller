@@ -10,8 +10,8 @@ PAGE 0 :
    RAMLS0           : origin = 0x008000, length = 0x000800
    RAMLS1           : origin = 0x008800, length = 0x000800
    RAMLS2           : origin = 0x009000, length = 0x000800
-   RAMLS3           : origin = 0x009800, length = 0x000800
-   RAMLS4           : origin = 0x00A000, length = 0x000800
+   RAMLS3_LS4       : origin = 0x009800, length = 0x001000
+//   RAMLS4           : origin = 0x00A000, length = 0x000800
    RESET            : origin = 0x3FFFC0, length = 0x000002
 
 PAGE 1 :
@@ -68,8 +68,8 @@ SECTIONS
 
 #if defined(__TI_EABI__)
 // .bss             : > RAMLS5,    PAGE = 1
-   .bss             : > RAMLS0|RAMLS1|RAMLS2,    PAGE = 0
-   .bss:output      : > RAMLS3,    PAGE = 0
+   .bss             : > RAMLS0|RAMLS1|RAMLS2|RAMLS3_LS4,    PAGE = 0
+   .bss:output      : > RAMLS1,    PAGE = 0
    .init_array      : > RAMM0,     PAGE = 0
    .const           : > RAMLS5,    PAGE = 1
    .data            : > RAMLS5,    PAGE = 1
